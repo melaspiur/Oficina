@@ -9,13 +9,18 @@ import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getClientes, updateCliente } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
-import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types"
+import type { ClienteWithId, NovedadWithId } from "@/lib/types"
 
 type LogMessage = {
   type: 'success' | 'info' | 'warning' | 'error';
   message: string;
 };
 
+// Type for the object that will be stored in Firestore
+type ServicioToStore = {
+  novedadId: string;
+  cantidad: number;
+}
 
 export function ImportacionView() {
   const [inputText, setInputText] = React.useState("")
@@ -26,7 +31,6 @@ export function ImportacionView() {
   const { toast } = useToast()
 
   React.useEffect(() => {
-    // Cargar clientes y novedades una sola vez al montar el componente
     async function fetchData() {
         try {
             const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
@@ -68,38 +72,47 @@ export function ImportacionView() {
 
     const lines = inputText.split('\n');
     let currentCliente: ClienteWithId | null = null;
-    let serviciosParaCliente: ServicioAsignado[] = [];
+    let serviciosParaCliente: ServicioToStore[] = [];
     let updatesCount = 0;
+    const updatePromises: Promise<any>[] = [];
+    let clienteParaActualizar: ClienteWithId | null = null;
+
+    const processLastClient = async () => {
+        if (clienteParaActualizar) {
+            const updatePromise = updateCliente(clienteParaActualizar.id, { serviciosAsignados: serviciosParaCliente })
+                .then(() => {
+                    addLog({ type: 'success', message: `Cliente "${clienteParaActualizar!.nombre}": ${serviciosParaCliente.length} novedades asignadas correctamente.` });
+                    updatesCount++;
+                })
+                .catch(() => {
+                    addLog({ type: 'error', message: `Error al actualizar el cliente "${clienteParaActualizar!.nombre}".` });
+                });
+            updatePromises.push(updatePromise);
+        }
+    }
 
     for (const line of lines) {
       if (line.includes('; ---------------------------')) {
-        // Es una línea de cliente, procesar el anterior si existe
-        if (currentCliente) {
-          try {
-            await updateCliente(currentCliente.id, { serviciosAsignados: serviciosParaCliente });
-            addLog({ type: 'success', message: `Cliente "${currentCliente.nombre}": ${serviciosParaCliente.length} novedades asignadas correctamente.` });
-            updatesCount++;
-          } catch(e) {
-            addLog({ type: 'error', message: `Error al actualizar el cliente "${currentCliente.nombre}".` });
-          }
-        }
+        await processLastClient(); // Process previous client
         
-        // Empezar nuevo cliente
+        // Start new client
         const nombreCliente = line.split(';')[0].trim();
         serviciosParaCliente = [];
         currentCliente = null;
+        clienteParaActualizar = null;
 
         if (nombreCliente) {
             currentCliente = clientesDb.find(c => c.nombre.trim().toUpperCase() === nombreCliente.toUpperCase()) || null;
             if (!currentCliente) {
-                addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado en la base de datos. Se omitirá.` });
+                addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado. Se omitirá.` });
             } else {
                  addLog({ type: 'info', message: `Procesando cliente: "${currentCliente.nombre}"...` });
+                 clienteParaActualizar = currentCliente;
+                 serviciosParaCliente = [...(currentCliente.serviciosAsignados || [])] // Start with existing services
             }
         }
 
       } else if (currentCliente) {
-        // Es una línea de novedad para el cliente actual
         const parts = line.split(';').map(p => p.trim());
         if (parts.length === 3) {
           const [codigoStr, , cantidadStr] = parts;
@@ -113,30 +126,24 @@ export function ImportacionView() {
 
           const novedad = novedadesDb.find(n => n.codigo === codigo);
           if (!novedad) {
-            addLog({ type: 'warning', message: `Novedad con código ${codigo} no encontrada. Se omitirá para el cliente "${currentCliente.nombre}".` });
+            addLog({ type: 'warning', message: `Novedad con código ${codigo} no encontrada. Se omitirá para "${currentCliente.nombre}".` });
             continue;
           }
 
-          serviciosParaCliente.push({
-            novedadId: novedad.id,
-            nombre: novedad.nombre,
-            cantidad: cantidad,
-            importe: novedad.importe * cantidad,
-          });
+          // Avoid duplicates
+          if (!serviciosParaCliente.some(s => s.novedadId === novedad.id)) {
+            serviciosParaCliente.push({
+              novedadId: novedad.id,
+              cantidad: cantidad,
+            });
+          }
         }
       }
     }
 
-    // Procesar el último cliente del archivo
-    if (currentCliente) {
-         try {
-            await updateCliente(currentCliente.id, { serviciosAsignados: serviciosParaCliente });
-            addLog({ type: 'success', message: `Cliente "${currentCliente.nombre}": ${serviciosParaCliente.length} novedades asignadas correctamente.` });
-            updatesCount++;
-          } catch(e) {
-            addLog({ type: 'error', message: `Error al actualizar el cliente "${currentCliente.nombre}".` });
-          }
-    }
+    await processLastClient(); // Process the very last client in the file
+
+    await Promise.all(updatePromises);
     
     addLog({ type: 'info', message: `Proceso completado. Se actualizaron ${updatesCount} clientes.` });
     setIsProcessing(false)
@@ -150,6 +157,7 @@ export function ImportacionView() {
           <CardDescription>
             Pegue el listado de texto para asignar masivamente las novedades a los clientes.
             El sistema buscará cada cliente por nombre y cada novedad por código para realizar la asignación.
+            Las asignaciones existentes no se eliminarán, solo se agregarán las nuevas.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -36,9 +36,7 @@ const clienteSchema = z.object({
   categoria: z.coerce.number().min(1).max(5),
   serviciosAsignados: z.array(z.object({
     novedadId: z.string(),
-    nombre: z.string(),
     cantidad: z.coerce.number().min(0),
-    importe: z.coerce.number().min(0),
   })).optional(),
 });
 

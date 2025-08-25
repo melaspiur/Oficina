@@ -40,7 +40,7 @@ export function AsignacionView() {
       const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo);
       setNovedades(sortedNovedades);
 
-      // Create the flat table of assignments
+      // Create the flat table of assignments by combining cliente and novedad data
       const flatAsignaciones: ServicioAsignado[] = [];
       sortedClientes.forEach(cliente => {
         cliente.serviciosAsignados?.forEach(servicio => {
@@ -54,7 +54,7 @@ export function AsignacionView() {
               novedadCodigo: novedad.codigo,
               novedadNombre: novedad.nombre,
               cantidad: servicio.cantidad,
-              importe: servicio.importe
+              importe: novedad.importe * servicio.cantidad
             });
           }
         });
@@ -85,8 +85,7 @@ export function AsignacionView() {
     }
 
     const cliente = clientes.find(c => c.id === selectedClienteId);
-    const novedad = novedades.find(n => n.id === selectedNovedadId);
-    if (!cliente || !novedad) return;
+    if (!cliente) return;
 
     const serviciosActuales = cliente.serviciosAsignados || [];
 
@@ -96,10 +95,8 @@ export function AsignacionView() {
     }
 
     const nuevoServicio = {
-      novedadId: novedad.id,
-      nombre: novedad.nombre,
+      novedadId: selectedNovedadId,
       cantidad: cantidadNum,
-      importe: novedad.importe * cantidadNum,
     };
     
     const nuevosServiciosAsignados = [...serviciosActuales, nuevoServicio];
@@ -155,8 +152,8 @@ export function AsignacionView() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-2">
                     <Label htmlFor="cliente-select">Cliente</Label>
-                    <Select onValueChange={setSelectedClienteId} value={selectedClienteId || ""} disabled={isLoading}>
-                        <SelectTrigger id="cliente-select"><SelectValue placeholder="Seleccione..." /></SelectTrigger>
+                    <Select onValueChange={setSelectedClienteId} value={selectedClienteId || ""}>
+                        <SelectTrigger id="cliente-select" disabled={isLoading}><SelectValue placeholder="Seleccione..." /></SelectTrigger>
                         <SelectContent>
                             {clientes.map(c => <SelectItem key={c.id} value={c.id}>{`${c.codigo} - ${c.nombre}`}</SelectItem>)}
                         </SelectContent>
@@ -164,8 +161,8 @@ export function AsignacionView() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="novedad-select">Novedad</Label>
-                     <Select onValueChange={setSelectedNovedadId} value={selectedNovedadId || ""} disabled={isLoading}>
-                        <SelectTrigger id="novedad-select"><SelectValue placeholder="Seleccione..." /></SelectTrigger>
+                     <Select onValueChange={setSelectedNovedadId} value={selectedNovedadId || ""}>
+                        <SelectTrigger id="novedad-select" disabled={isLoading}><SelectValue placeholder="Seleccione..." /></SelectTrigger>
                         <SelectContent>
                             {novedades.map(n => <SelectItem key={n.id} value={n.id}>{`${n.codigo} - ${n.nombre}`}</SelectItem>)}
                         </SelectContent>
@@ -179,6 +176,7 @@ export function AsignacionView() {
                         inputMode="decimal"
                         value={String(newCantidad).replace('.',',')}
                         onChange={(e) => setNewCantidad(e.target.value)}
+                        disabled={isLoading}
                     />
                 </div>
                 <div>

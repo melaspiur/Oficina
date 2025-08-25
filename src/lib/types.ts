@@ -10,15 +10,16 @@ export type Event = {
   description: string;
 };
 
+// This is a "view model" for display purposes, created by combining Cliente and Novedad data.
 export type ServicioAsignado = {
-  clienteId: string; // Added for easier table management
-  clienteCodigo: number; // Added for display
-  clienteNombre: string; // Added for display
+  clienteId: string; 
+  clienteCodigo: number;
+  clienteNombre: string;
   novedadId: string;
-  novedadCodigo: number; // Added for display
+  novedadCodigo: number; 
   novedadNombre: string;
   cantidad: number;
-  importe: number;
+  importe: number; // Calculated on the fly: novedad.importe * cantidad
 };
 
 export type Cliente = {
@@ -30,11 +31,9 @@ export type Cliente = {
   cuit: string;
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
-  serviciosAsignados?: { // Stored in Firestore
+  serviciosAsignados?: { // This is what's stored in Firestore
     novedadId: string;
     cantidad: number;
-    importe: number;
-    nombre: string;
   }[];
 };
 
