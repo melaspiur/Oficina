@@ -73,17 +73,31 @@ export function AsignacionView() {
   }
 
   const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string | number) => {
-    const newServicios = [...serviciosAsignados];
-    const parsedValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
+    const newServicios = [...serviciosAsignados]
     
-    if (isNaN(parsedValue)) return;
-    
-    // @ts-ignore
-    newServicios[index][field] = parsedValue;
-    
-    const novedadOriginal = novedades.find(n => n.id === newServicios[index].novedadId);
-    if (novedadOriginal) {
-      newServicios[index].importe = novedadOriginal.importe * parsedValue;
+    // For quantity, parse string to float, allowing decimals
+    if (field === 'cantidad' && typeof value === 'string') {
+        // Allow empty string for clearing the input
+        if (value === '') {
+            // @ts-ignore
+            newServicios[index][field] = 0; // Or keep it as empty string and handle NaN later
+            setServiciosAsignados(newServicios);
+            return;
+        }
+
+        // Replace comma with dot for decimal parsing
+        const cleanedValue = value.replace(",", ".")
+        const parsedValue = parseFloat(cleanedValue)
+
+        if (!isNaN(parsedValue)) {
+            // @ts-ignore
+            newServicios[index][field] = parsedValue;
+
+            const novedadOriginal = novedades.find(n => n.id === newServicios[index].novedadId);
+            if (novedadOriginal) {
+                newServicios[index].importe = novedadOriginal.importe * parsedValue;
+            }
+        }
     }
     
     setServiciosAsignados(newServicios);
@@ -114,14 +128,6 @@ export function AsignacionView() {
     }).format(value || 0);
   }
   
-    const formatInputAsCurrency = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-      const value = e.target.value;
-      const numValue = parseFloat(value.replace(/[^0-9.-]/g, ''));
-      if (!isNaN(numValue)) {
-        handleServicioChange(index, 'cantidad', numValue);
-      }
-    };
-
 
   return (
     <div className="p-6 space-y-6">
@@ -185,8 +191,8 @@ export function AsignacionView() {
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-[50%]">Nombre del Servicio</TableHead>
-                            <TableHead>Cantidad</TableHead>
-                            <TableHead>Importe</TableHead>
+                            <TableHead className="text-right">Cantidad</TableHead>
+                            <TableHead className="text-right">Importe</TableHead>
                             <TableHead className="text-right">Acción</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -197,18 +203,18 @@ export function AsignacionView() {
                               <TableCell className="font-medium">{servicio.nombre}</TableCell>
                               <TableCell>
                                 <Input 
-                                  type="text" 
-                                  value={formatCurrency(servicio.cantidad)}
-                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value.replace(/[^0-9,.]/g, '').replace('.', '').replace(',', '.'))}
-                                  className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  type="text"
+                                  value={servicio.cantidad.toString().replace('.',',')}
+                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
+                                  className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                  <Input 
                                   type="text"
                                   value={formatCurrency(servicio.importe)} 
                                   readOnly
-                                  className="h-8 bg-muted/50 border-none"
+                                  className="h-8 bg-muted/50 border-none text-right"
                                 />
                               </TableCell>
                               <TableCell className="text-right">
