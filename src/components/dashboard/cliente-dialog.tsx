@@ -28,9 +28,9 @@ type ClienteDialogProps = {
 const clienteSchema = z.object({
   codigo: z.coerce.number().min(1).max(9999),
   nombre: z.string().min(1, "El nombre es requerido"),
-  domicilio: z.string().min(1, "El domicilio es requerido"),
-  localidad: z.string().min(1, "La localidad es requerida"),
-  provincia: z.string().min(1, "La provincia es requerida"),
+  domicilio: z.string(),
+  localidad: z.string(),
+  provincia: z.string(),
   cuit: z.string().min(1, "El CUIT es requerido"),
   tipo: z.enum(["inscripto", "monotributo"]),
   categoria: z.coerce.number().min(1).max(5),
@@ -42,6 +42,9 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
     resolver: zodResolver(clienteSchema),
     defaultValues: cliente || {
       codigo: Math.floor(Math.random() * 9998) + 1, // sample default
+      domicilio: "",
+      localidad: "",
+      provincia: "",
       tipo: "inscripto",
       categoria: 1
     }
