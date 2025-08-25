@@ -59,7 +59,7 @@ const defaultMeses: Meses = {
 };
 
 export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: NovedadDialogProps) {
-  const { register, handleSubmit, control, formState: { errors }, reset, setValue, watch } = useForm<Novedad>({
+  const { register, handleSubmit, control, formState: { errors }, reset, setValue } = useForm<Novedad>({
     resolver: zodResolver(novedadSchema),
     defaultValues: novedad || {
       codigo: Math.floor(Math.random() * 98) + 1,
@@ -68,8 +68,6 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
       meses: defaultMeses
     }
   });
-
-  const mesesWatch = watch("meses");
 
   React.useEffect(() => {
     if (isOpen) {
@@ -82,15 +80,9 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
     }
   }, [isOpen, novedad, reset]);
   
-  const areAllMonthsSelected = React.useMemo(() => {
-      // Ensure mesesWatch is defined before checking its values
-      if (!mesesWatch) return false;
-      return mesesList.every(mes => mesesWatch[mes]);
-  }, [mesesWatch]);
-
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (select: boolean) => {
     mesesList.forEach(mes => {
-      setValue(`meses.${mes}`, checked, { shouldValidate: true, shouldDirty: true });
+      setValue(`meses.${mes}`, select, { shouldValidate: true, shouldDirty: true });
     });
   };
 
@@ -128,15 +120,13 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
           
           <div className="space-y-4 py-4">
             <Label>Meses de Facturación *</Label>
-             <div className="flex items-center space-x-2">
-                 <Checkbox 
-                    id="select-all"
-                    onCheckedChange={handleSelectAll}
-                    checked={areAllMonthsSelected}
-                 />
-                <Label htmlFor="select-all" className="font-normal capitalize">
-                  {areAllMonthsSelected ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
-                </Label>
+            <div className="flex space-x-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => handleSelectAll(true)}>
+                  Seleccionar Todos
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => handleSelectAll(false)}>
+                  Deseleccionar Todos
+                </Button>
             </div>
             <div className="grid grid-cols-3 gap-4">
               {mesesList.map((mes) => (
