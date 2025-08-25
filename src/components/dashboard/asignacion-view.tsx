@@ -87,17 +87,20 @@ export function AsignacionView() {
     const servicio = { ...newServicios[index] };
     
     if (field === 'cantidad') {
-      const cleanedValue = value.replace(/,/g, '.');
+      const cleanedValue = value.replace(',', '.');
       const parsedValue = parseFloat(cleanedValue);
-      if (!isNaN(parsedValue)) {
+       if (!isNaN(parsedValue)) {
           servicio.cantidad = parsedValue;
           const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
           if (novedadOriginal) {
               servicio.importe = novedadOriginal.importe * parsedValue;
           }
-      } else if (cleanedValue === '' || cleanedValue === '.') {
+      } else if (value === '') {
           servicio.cantidad = 0;
-          servicio.importe = 0;
+           const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
+           if (novedadOriginal) {
+              servicio.importe = novedadOriginal.importe * 0;
+           }
       }
     }
     newServicios[index] = servicio;
@@ -120,7 +123,7 @@ export function AsignacionView() {
   }
 
   const formatCurrency = (value: number) => {
-    if (typeof value !== 'number') return '0,00';
+    if (typeof value !== 'number' || isNaN(value)) return '0,00';
     return new Intl.NumberFormat('es-AR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -161,8 +164,12 @@ export function AsignacionView() {
                         <CommandItem
                         key={cliente.id}
                         value={`${cliente.codigo} - ${cliente.nombre}`}
-                        onSelect={() => {
-                            handleClienteChange(cliente.id);
+                        onSelect={(currentValue) => {
+                           // Find the client that matches the selected value
+                            const clienteSeleccionado = clientes.find(c => `${c.codigo} - ${c.nombre}`.toLowerCase() === currentValue.toLowerCase());
+                            if (clienteSeleccionado) {
+                              handleClienteChange(clienteSeleccionado.id);
+                            }
                             setOpenCombobox(false);
                         }}
                         >
