@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -29,6 +30,7 @@ import {
   User,
   ClipboardList,
   Upload,
+  UserCheck,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -37,8 +39,9 @@ import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionView } from './facturacion-view';
-import { AsignacionView } from './asignacion-view';
-import { ImportacionView } from './importacion-view'; // <-- Importar la nueva vista
+import { AsignacionIndividualView } from './asignacion-individual-view';
+import { AsignacionClienteView } from './asignacion-cliente-view';
+import { ImportacionView } from './importacion-view';
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -69,11 +72,13 @@ export function MainLayout() {
         return <ClientesView />;
       case 'clientes-novedades':
         return <NovedadesView />;
-      case 'clientes-asignacion':
-        return <AsignacionView />;
+      case 'clientes-asignacion-individual':
+        return <AsignacionIndividualView />;
+       case 'clientes-asignacion-cliente':
+        return <AsignacionClienteView />;
       case 'facturacion':
         return <FacturacionView />;
-      case 'importacion': // <-- Nueva vista de importación
+      case 'importacion':
         return <ImportacionView />;
       case 'informes':
         return <PlaceholderView title="Informes" />;
@@ -87,7 +92,8 @@ export function MainLayout() {
   const getHeaderTitle = () => {
     if (activeView.startsWith('clientes-')) {
       const title = activeView.split('-')[1];
-      if (title === 'asignacion') return "Asignación de Novedades";
+      if (activeView === 'clientes-asignacion-individual') return "Asignación Individual";
+      if (activeView === 'clientes-asignacion-cliente') return "Asignación por Cliente";
       return title.charAt(0).toUpperCase() + title.slice(1);
     }
      if (activeView === 'importacion') {
@@ -146,10 +152,18 @@ export function MainLayout() {
                   </SidebarMenuSubItem>
                    <SidebarMenuSubItem>
                     <SidebarMenuSubButton 
-                      onClick={() => setActiveView('clientes-asignacion')} 
-                      isActive={activeView === 'clientes-asignacion'}>
+                      onClick={() => setActiveView('clientes-asignacion-individual')} 
+                      isActive={activeView === 'clientes-asignacion-individual'}>
                       <ClipboardList />
-                      <span>Asignación</span>
+                      <span>Asig. Individual</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton 
+                      onClick={() => setActiveView('clientes-asignacion-cliente')} 
+                      isActive={activeView === 'clientes-asignacion-cliente'}>
+                      <UserCheck />
+                      <span>Asig. por Cliente</span>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
@@ -213,3 +227,5 @@ export function MainLayout() {
     </SidebarProvider>
   );
 }
+
+    
