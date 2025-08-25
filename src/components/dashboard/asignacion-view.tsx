@@ -87,36 +87,43 @@ export function AsignacionView() {
     const servicio = { ...newServicios[index] };
     
     if (field === 'cantidad') {
+      // Reemplaza la coma por un punto para el procesamiento interno
       const cleanedValue = value.replace(',', '.');
       const parsedValue = parseFloat(cleanedValue);
-       if (!isNaN(parsedValue)) {
-          servicio.cantidad = parsedValue;
-          const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
-          if (novedadOriginal) {
-              servicio.importe = novedadOriginal.importe * parsedValue;
-          }
+      
+      // Almacenamos el valor parseado si es válido, o el string si no (para permitir edición)
+      (servicio as any)[field] = isNaN(parsedValue) ? value : parsedValue;
+
+      // Recalculamos el importe basado en la cantidad
+      if (!isNaN(parsedValue)) {
+        const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
+        if (novedadOriginal) {
+          servicio.importe = novedadOriginal.importe * parsedValue;
+        }
       } else if (value === '' || cleanedValue === '') {
-          // Allow clearing the input
-          (servicio as any).cantidad = ''; // Temporarily store as empty string for editing
+        // Permitir vaciar el campo
+        (servicio as any).cantidad = '';
       }
     }
     newServicios[index] = servicio;
     setServiciosAsignados(newServicios);
-  }
+  };
 
 
-  const handleSaveChanges = async () => {
+  const handleSaveChanges = () => {
     if (!selectedCliente) return;
 
-    // Validate and clean servicios before saving
-    const sanitizedServicios = serviciosAsignados.map(s => ({
+    // Validar y limpiar servicios antes de guardar
+    const sanitizedServicios = serviciosAsignados.map(s => {
+      const cantidad = parseFloat(String(s.cantidad).replace(',', '.'));
+      return {
         ...s,
-        cantidad: parseFloat(String(s.cantidad)) || 0,
-    }));
-
+        cantidad: isNaN(cantidad) ? 0 : cantidad,
+      };
+    });
 
     try {
-      await updateCliente(selectedCliente.id, { serviciosAsignados: sanitizedServicios });
+      updateCliente(selectedCliente.id, { serviciosAsignados: sanitizedServicios });
       const updatedClientes = clientes.map(c => 
         c.id === selectedCliente.id ? { ...c, serviciosAsignados: sanitizedServicios } : c
       );
@@ -130,13 +137,15 @@ export function AsignacionView() {
   }
 
   const formatCurrency = (value: number | string) => {
-    const numValue = Number(value);
-    if (typeof numValue !== 'number' || isNaN(numValue)) return '0,00';
-    return new Intl.NumberFormat('es-AR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(numValue);
-  }
+      const numValue = typeof value === 'string' ? parseFloat(value.replace(',', '.')) : value;
+      if (isNaN(numValue)) {
+        return '';
+      }
+      return new Intl.NumberFormat('es-AR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+      }).format(numValue);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -167,26 +176,26 @@ export function AsignacionView() {
                 <CommandInput placeholder="Buscar cliente..." />
                 <CommandEmpty>No se encontró ningún cliente.</CommandEmpty>
                 <CommandList>
-                    <CommandGroup>
+                  <CommandGroup>
                     {clientes.map((cliente) => (
-                        <CommandItem
+                      <CommandItem
                         key={cliente.id}
                         value={`${cliente.codigo} - ${cliente.nombre}`}
                         onSelect={() => {
-                           handleClienteChange(cliente.id);
-                           setOpenCombobox(false);
+                          handleClienteChange(cliente.id);
+                          setOpenCombobox(false);
                         }}
-                        >
+                      >
                         <Check
-                            className={cn(
+                          className={cn(
                             "mr-2 h-4 w-4",
                             selectedCliente?.id === cliente.id ? "opacity-100" : "opacity-0"
-                            )}
+                          )}
                         />
                         {cliente.codigo} - {cliente.nombre}
-                        </CommandItem>
+                      </CommandItem>
                     ))}
-                    </CommandGroup>
+                  </CommandGroup>
                 </CommandList>
               </Command>
             </PopoverContent>
@@ -245,7 +254,7 @@ export function AsignacionView() {
                           <TableRow key={index}>
                               <TableCell className="font-medium">{servicio.nombre}</TableCell>
                               <TableCell>
-                                <Input 
+                                <Input
                                   type="text"
                                   inputMode="decimal"
                                   value={
@@ -259,7 +268,7 @@ export function AsignacionView() {
                                   }}
                                   onBlur={() => {
                                       setFocusedInputIndex(null)
-                                      handleSaveChanges() 
+                                      handleSaveChanges()
                                   }}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
                                   className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
