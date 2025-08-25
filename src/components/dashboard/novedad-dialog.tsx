@@ -82,17 +82,16 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
     }
   }, [isOpen, novedad, reset]);
   
-  const handleSelectAll = (checked: boolean | "indeterminate") => {
-    if (typeof checked === 'boolean') {
-        mesesList.forEach(mes => {
-            setValue(`meses.${mes}`, checked);
-        });
-    }
-  };
-
   const areAllMonthsSelected = React.useMemo(() => {
       return mesesList.every(mes => mesesWatch[mes]);
   }, [mesesWatch]);
+
+  const handleSelectAll = () => {
+    const shouldSelectAll = !areAllMonthsSelected;
+    mesesList.forEach(mes => {
+        setValue(`meses.${mes}`, shouldSelectAll, { shouldValidate: true, shouldDirty: true });
+    });
+  };
 
   const onSubmit = (data: Novedad) => {
     onSave(data)
