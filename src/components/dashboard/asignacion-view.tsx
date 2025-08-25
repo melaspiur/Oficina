@@ -173,17 +173,15 @@ export function AsignacionView() {
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
               <Command>
-                <CommandInput placeholder="Buscar cliente..." />
-                <CommandEmpty>No se encontró ningún cliente.</CommandEmpty>
                 <CommandList>
                   <CommandGroup>
                     {clientes.map((cliente) => (
                       <CommandItem
                         key={cliente.id}
-                        value={`${cliente.codigo} - ${cliente.nombre}`}
-                        onSelect={() => {
-                          handleClienteChange(cliente.id);
-                          setOpenCombobox(false);
+                        value={cliente.id}
+                        onSelect={(currentValue) => {
+                           handleClienteChange(currentValue);
+                           setOpenCombobox(false);
                         }}
                       >
                         <Check
