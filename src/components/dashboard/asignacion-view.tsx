@@ -26,6 +26,7 @@ export function AsignacionView() {
   const [selectedNovedad, setSelectedNovedad] = React.useState<NovedadWithId | null>(null)
   const [serviciosAsignados, setServiciosAsignados] = React.useState<ServicioAsignado[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [focusedInputIndex, setFocusedInputIndex] = React.useState<number | null>(null)
   const { toast } = useToast()
 
   React.useEffect(() => {
@@ -82,11 +83,6 @@ export function AsignacionView() {
     const servicio = { ...newServicios[index] };
     
     if (field === 'cantidad' && typeof value === 'string') {
-      if (value === '') {
-        servicio.cantidad = 0;
-        servicio.importe = 0;
-      } else {
-        // Allow dot as decimal separator, clean up extra dots
         const cleanedValue = value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
         const parts = cleanedValue.split('.');
         const finalValue = parts.length > 1 ? `${parts[0]}.${parts.slice(1).join('')}` : parts[0];
@@ -102,7 +98,6 @@ export function AsignacionView() {
              servicio.cantidad = 0;
              servicio.importe = 0;
         }
-      }
       // @ts-ignore
       newServicios[index] = servicio;
     }
@@ -210,7 +205,13 @@ export function AsignacionView() {
                                 <Input 
                                   type="text"
                                   inputMode="decimal"
-                                  value={servicio.cantidad === 0 ? '' : servicio.cantidad.toString()}
+                                  value={
+                                    focusedInputIndex === index
+                                      ? servicio.cantidad.toString().replace(',', '.')
+                                      : formatCurrency(servicio.cantidad)
+                                  }
+                                  onFocus={() => setFocusedInputIndex(index)}
+                                  onBlur={() => setFocusedInputIndex(null)}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
                                   className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
