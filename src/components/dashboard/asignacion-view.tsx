@@ -161,12 +161,8 @@ export function AsignacionView() {
                         <CommandItem
                         key={cliente.id}
                         value={`${cliente.codigo} - ${cliente.nombre}`}
-                        onSelect={(currentValue) => {
-                            // The onSelect gives the 'value', not the id. We find the client again.
-                            const selected = clientes.find(c => `${c.codigo} - ${c.nombre}`.toLowerCase() === currentValue.toLowerCase());
-                            if(selected) {
-                                handleClienteChange(selected.id);
-                            }
+                        onSelect={() => {
+                            handleClienteChange(cliente.id);
                             setOpenCombobox(false);
                         }}
                         >
@@ -243,7 +239,7 @@ export function AsignacionView() {
                                   inputMode="decimal"
                                   value={
                                     focusedInputIndex === index
-                                      ? servicio.cantidad.toString().replace('.',',')
+                                      ? String(servicio.cantidad).replace('.', ',')
                                       : formatCurrency(servicio.cantidad)
                                   }
                                   onFocus={() => setFocusedInputIndex(index)}
