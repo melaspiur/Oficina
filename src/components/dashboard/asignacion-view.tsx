@@ -13,11 +13,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, PlusCircle, Loader2 } from "lucide-react"
+import { Trash2, PlusCircle, Loader2, Edit } from "lucide-react"
 import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types"
 import { getClientes, updateCliente } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
 import { useToast } from "@/hooks/use-toast"
+import { AsignacionDialog } from "./asignacion-dialog"
 
 export function AsignacionView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
@@ -29,6 +30,8 @@ export function AsignacionView() {
   const [newCantidad, setNewCantidad] = React.useState<number | string>(1.00)
 
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isDialogEditOpen, setIsDialogEditOpen] = React.useState(false);
+  const [asignacionToEdit, setAsignacionToEdit] = React.useState<ServicioAsignado | null>(null);
   const { toast } = useToast()
 
   const fetchData = React.useCallback(async () => {
@@ -40,7 +43,6 @@ export function AsignacionView() {
       const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo);
       setNovedades(sortedNovedades);
 
-      // Create the flat table of assignments by combining cliente and novedad data
       const flatAsignaciones: ServicioAsignado[] = [];
       sortedClientes.forEach(cliente => {
         cliente.serviciosAsignados?.forEach(servicio => {
@@ -104,8 +106,7 @@ export function AsignacionView() {
     try {
         await updateCliente(cliente.id, { serviciosAsignados: nuevosServiciosAsignados });
         toast({ title: "Asignación Creada", description: "La novedad se asignó correctamente." });
-        fetchData(); // Refresh the entire view
-        // Reset form
+        fetchData(); 
         setSelectedClienteId(null);
         setSelectedNovedadId(null);
         setNewCantidad(1.00);
@@ -126,10 +127,40 @@ export function AsignacionView() {
     try {
         await updateCliente(cliente.id, { serviciosAsignados: nuevosServiciosAsignados });
         toast({ title: "Asignación Eliminada", description: "La asignación se ha eliminado correctamente." });
-        fetchData(); // Refresh the entire view
+        fetchData();
     } catch (error) {
         console.error("Error removing service:", error);
         toast({ title: "Error", description: "No se pudo eliminar la asignación.", variant: "destructive" });
+    }
+  };
+
+  const handleEditServicio = (asignacion: ServicioAsignado) => {
+    setAsignacionToEdit(asignacion);
+    setIsDialogEditOpen(true);
+  };
+
+  const handleSaveEdit = async (nuevaCantidad: number) => {
+    if (!asignacionToEdit) return;
+
+    const cliente = clientes.find(c => c.id === asignacionToEdit.clienteId);
+    if (!cliente) return;
+
+    const nuevosServiciosAsignados = (cliente.serviciosAsignados || []).map(servicio =>
+      servicio.novedadId === asignacionToEdit.novedadId
+        ? { ...servicio, cantidad: nuevaCantidad }
+        : servicio
+    );
+
+    try {
+      await updateCliente(cliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+      toast({ title: "Asignación Actualizada", description: "La cantidad se actualizó correctamente." });
+      fetchData();
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast({ title: "Error", description: "No se pudo actualizar la asignación.", variant: "destructive" });
+    } finally {
+      setIsDialogEditOpen(false);
+      setAsignacionToEdit(null);
     }
   };
   
@@ -203,7 +234,7 @@ export function AsignacionView() {
                   <TableHead>Nombre Cliente</TableHead>
                   <TableHead>Novedad</TableHead>
                   <TableHead className="text-right">Cantidad</TableHead>
-                  <TableHead className="text-right">Acción</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -221,6 +252,9 @@ export function AsignacionView() {
                        <TableCell>{`${asignacion.novedadCodigo} - ${asignacion.novedadNombre}`}</TableCell>
                       <TableCell className="text-right">{formatCurrency(asignacion.cantidad)}</TableCell>
                       <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditServicio(asignacion)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleRemoveServicio(asignacion)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -239,6 +273,12 @@ export function AsignacionView() {
           </div>
         </CardContent>
       </Card>
+      <AsignacionDialog
+        isOpen={isDialogEditOpen}
+        onOpenChange={setIsDialogEditOpen}
+        onSave={handleSaveEdit}
+        asignacion={asignacionToEdit}
+      />
     </div>
   )
 }
