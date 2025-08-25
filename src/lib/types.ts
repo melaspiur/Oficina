@@ -11,10 +11,14 @@ export type Event = {
 };
 
 export type ServicioAsignado = {
+  clienteId: string; // Added for easier table management
+  clienteCodigo: number; // Added for display
+  clienteNombre: string; // Added for display
   novedadId: string;
-  nombre: string;
+  novedadCodigo: number; // Added for display
+  novedadNombre: string;
   cantidad: number;
-  importe: number; // Importe personalizado para este cliente
+  importe: number;
 };
 
 export type Cliente = {
@@ -26,7 +30,12 @@ export type Cliente = {
   cuit: string;
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
-  serviciosAsignados?: ServicioAsignado[];
+  serviciosAsignados?: { // Stored in Firestore
+    novedadId: string;
+    cantidad: number;
+    importe: number;
+    nombre: string;
+  }[];
 };
 
 export type ClienteWithId = Cliente & { id: string };
