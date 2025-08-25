@@ -19,7 +19,7 @@ import { getClientes, updateCliente } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
 import { useToast } from "@/hooks/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
 
 export function AsignacionView() {
@@ -82,28 +82,24 @@ export function AsignacionView() {
     setServiciosAsignados(newServicios);
   }
 
-  const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string | number) => {
+  const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string) => {
     const newServicios = [...serviciosAsignados];
     const servicio = { ...newServicios[index] };
     
-    if (field === 'cantidad' && typeof value === 'string') {
-        const cleanedValue = value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
-        const parts = cleanedValue.split('.');
-        const finalValue = parts.length > 1 ? `${parts[0]}.${parts.slice(1).join('')}` : parts[0];
-        
-        const parsedValue = parseFloat(finalValue);
-        if (!isNaN(parsedValue)) {
-            servicio.cantidad = parsedValue;
-            const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
-            if (novedadOriginal) {
-                servicio.importe = novedadOriginal.importe * parsedValue;
-            }
-        } else if (finalValue === '') {
-             servicio.cantidad = 0;
-             servicio.importe = 0;
-        }
+    if (field === 'cantidad') {
+      const cleanedValue = value.replace(/,/g, '.');
+      const parsedValue = parseFloat(cleanedValue);
+      if (!isNaN(parsedValue)) {
+          servicio.cantidad = parsedValue;
+          const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
+          if (novedadOriginal) {
+              servicio.importe = novedadOriginal.importe * parsedValue;
+          }
+      } else if (cleanedValue === '' || cleanedValue === '.') {
+          servicio.cantidad = 0;
+          servicio.importe = 0;
+      }
     }
-    // @ts-ignore
     newServicios[index] = servicio;
     setServiciosAsignados(newServicios);
   }
@@ -124,15 +120,11 @@ export function AsignacionView() {
   }
 
   const formatCurrency = (value: number) => {
+    if (typeof value !== 'number') return '0,00';
     return new Intl.NumberFormat('es-AR', {
-      style: 'decimal',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value || 0);
-  }
-
-  const formatInputValue = (value: number) => {
-    return value.toString().replace('.', ',');
+    }).format(value);
   }
   
   return (
@@ -163,26 +155,32 @@ export function AsignacionView() {
               <Command>
                 <CommandInput placeholder="Buscar cliente..." />
                 <CommandEmpty>No se encontró ningún cliente.</CommandEmpty>
-                <CommandGroup>
-                  {clientes.map((cliente) => (
-                    <CommandItem
-                      key={cliente.id}
-                      value={`${cliente.codigo} ${cliente.nombre}`}
-                      onSelect={() => {
-                        handleClienteChange(cliente.id)
-                        setOpenCombobox(false)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedCliente?.id === cliente.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {cliente.codigo} - {cliente.nombre}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                <CommandList>
+                    <CommandGroup>
+                    {clientes.map((cliente) => (
+                        <CommandItem
+                        key={cliente.id}
+                        value={`${cliente.codigo} - ${cliente.nombre}`}
+                        onSelect={(currentValue) => {
+                            // The onSelect gives the 'value', not the id. We find the client again.
+                            const selected = clientes.find(c => `${c.codigo} - ${c.nombre}`.toLowerCase() === currentValue.toLowerCase());
+                            if(selected) {
+                                handleClienteChange(selected.id);
+                            }
+                            setOpenCombobox(false);
+                        }}
+                        >
+                        <Check
+                            className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedCliente?.id === cliente.id ? "opacity-100" : "opacity-0"
+                            )}
+                        />
+                        {cliente.codigo} - {cliente.nombre}
+                        </CommandItem>
+                    ))}
+                    </CommandGroup>
+                </CommandList>
               </Command>
             </PopoverContent>
           </Popover>
@@ -245,12 +243,12 @@ export function AsignacionView() {
                                   inputMode="decimal"
                                   value={
                                     focusedInputIndex === index
-                                      ? servicio.cantidad.toString().replace('.', ',')
+                                      ? servicio.cantidad.toString().replace('.',',')
                                       : formatCurrency(servicio.cantidad)
                                   }
                                   onFocus={() => setFocusedInputIndex(index)}
                                   onBlur={() => setFocusedInputIndex(null)}
-                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value.replace(',', '.'))}
+                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
                                   className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </TableCell>
