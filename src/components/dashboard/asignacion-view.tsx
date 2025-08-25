@@ -13,11 +13,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, PlusCircle } from "lucide-react"
+import { Trash2, PlusCircle, Check, ChevronsUpDown } from "lucide-react"
 import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types"
 import { getClientes, updateCliente } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
 import { useToast } from "@/hooks/use-toast"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
 export function AsignacionView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
@@ -27,6 +30,7 @@ export function AsignacionView() {
   const [serviciosAsignados, setServiciosAsignados] = React.useState<ServicioAsignado[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [focusedInputIndex, setFocusedInputIndex] = React.useState<number | null>(null)
+  const [openCombobox, setOpenCombobox] = React.useState(false)
   const { toast } = useToast()
 
   React.useEffect(() => {
@@ -34,7 +38,8 @@ export function AsignacionView() {
       setIsLoading(true)
       try {
         const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()])
-        setClientes(clientesData)
+        const sortedClientes = clientesData.sort((a, b) => a.codigo - b.codigo);
+        setClientes(sortedClientes);
         const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo)
         setNovedades(sortedNovedades)
       } catch (error) {
@@ -55,7 +60,6 @@ export function AsignacionView() {
   
   const handleAddServicio = () => {
     if (selectedNovedad) {
-      // Check if the service already exists
       const servicioExistente = serviciosAsignados.find(s => s.novedadId === selectedNovedad.id);
       if (servicioExistente) {
         toast({ title: "Servicio Duplicado", description: "Esta novedad ya ha sido asignada a este cliente.", variant: "destructive" });
@@ -98,10 +102,9 @@ export function AsignacionView() {
              servicio.cantidad = 0;
              servicio.importe = 0;
         }
-      // @ts-ignore
-      newServicios[index] = servicio;
     }
-    
+    // @ts-ignore
+    newServicios[index] = servicio;
     setServiciosAsignados(newServicios);
   }
 
@@ -127,8 +130,11 @@ export function AsignacionView() {
       maximumFractionDigits: 2,
     }).format(value || 0);
   }
-  
 
+  const formatInputValue = (value: number) => {
+    return value.toString().replace('.', ',');
+  }
+  
   return (
     <div className="p-6 space-y-6">
       <Card>
@@ -138,16 +144,48 @@ export function AsignacionView() {
         </CardHeader>
         <CardContent>
           <Label htmlFor="cliente-select">Cliente</Label>
-          <Select onValueChange={handleClienteChange} disabled={isLoading}>
-            <SelectTrigger id="cliente-select">
-              <SelectValue placeholder={isLoading ? "Cargando clientes..." : "Seleccione un cliente"} />
-            </SelectTrigger>
-            <SelectContent>
-              {clientes.map(cliente => (
-                <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openCombobox}
+                className="w-full justify-between"
+                disabled={isLoading}
+              >
+                {selectedCliente
+                  ? `${selectedCliente.codigo} - ${selectedCliente.nombre}`
+                  : isLoading ? "Cargando clientes..." : "Seleccione un cliente"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar cliente..." />
+                <CommandEmpty>No se encontró ningún cliente.</CommandEmpty>
+                <CommandGroup>
+                  {clientes.map((cliente) => (
+                    <CommandItem
+                      key={cliente.id}
+                      value={`${cliente.codigo} ${cliente.nombre}`}
+                      onSelect={() => {
+                        handleClienteChange(cliente.id)
+                        setOpenCombobox(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedCliente?.id === cliente.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {cliente.codigo} - {cliente.nombre}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </CardContent>
       </Card>
 
@@ -207,12 +245,12 @@ export function AsignacionView() {
                                   inputMode="decimal"
                                   value={
                                     focusedInputIndex === index
-                                      ? servicio.cantidad.toString().replace(',', '.')
+                                      ? servicio.cantidad.toString().replace('.', ',')
                                       : formatCurrency(servicio.cantidad)
                                   }
                                   onFocus={() => setFocusedInputIndex(index)}
                                   onBlur={() => setFocusedInputIndex(null)}
-                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
+                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value.replace(',', '.'))}
                                   className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </TableCell>
