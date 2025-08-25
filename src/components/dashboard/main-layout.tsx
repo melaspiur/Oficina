@@ -28,6 +28,7 @@ import {
   Newspaper,
   User,
   ClipboardList,
+  Upload,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -37,6 +38,7 @@ import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionView } from './facturacion-view';
 import { AsignacionView } from './asignacion-view';
+import { ImportacionView } from './importacion-view'; // <-- Importar la nueva vista
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -71,6 +73,8 @@ export function MainLayout() {
         return <AsignacionView />;
       case 'facturacion':
         return <FacturacionView />;
+      case 'importacion': // <-- Nueva vista de importación
+        return <ImportacionView />;
       case 'informes':
         return <PlaceholderView title="Informes" />;
       case 'ajustes':
@@ -85,6 +89,9 @@ export function MainLayout() {
       const title = activeView.split('-')[1];
       if (title === 'asignacion') return "Asignación de Novedades";
       return title.charAt(0).toUpperCase() + title.slice(1);
+    }
+     if (activeView === 'importacion') {
+      return "Importación y Asignación Masiva";
     }
      const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
      return viewName;
@@ -152,6 +159,12 @@ export function MainLayout() {
               <SidebarMenuButton onClick={() => setActiveView('facturacion')} isActive={activeView === 'facturacion'} tooltip="Facturación">
                 <FileText />
                 <span>Facturación</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => setActiveView('importacion')} isActive={activeView === 'importacion'} tooltip="Importación">
+                <Upload />
+                <span>Importación</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
