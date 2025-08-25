@@ -13,14 +13,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, PlusCircle, Check, ChevronsUpDown } from "lucide-react"
+import { Trash2, PlusCircle } from "lucide-react"
 import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types"
 import { getClientes, updateCliente } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
 import { useToast } from "@/hooks/use-toast"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { cn } from "@/lib/utils"
+import { Combobox } from "@/components/ui/combobox"
 
 export function AsignacionView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
@@ -30,7 +28,6 @@ export function AsignacionView() {
   const [serviciosAsignados, setServiciosAsignados] = React.useState<ServicioAsignado[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [focusedInputIndex, setFocusedInputIndex] = React.useState<number | null>(null)
-  const [openCombobox, setOpenCombobox] = React.useState(false)
   const { toast } = useToast()
 
   React.useEffect(() => {
@@ -52,7 +49,12 @@ export function AsignacionView() {
     fetchData()
   }, [toast])
 
-  const handleClienteChange = (clienteId: string) => {
+  const handleClienteChange = (clienteId: string | null) => {
+    if (!clienteId) {
+      setSelectedCliente(null)
+      setServiciosAsignados([])
+      return
+    }
     const cliente = clientes.find(c => c.id === clienteId) || null
     setSelectedCliente(cliente)
     setServiciosAsignados(cliente?.serviciosAsignados || [])
@@ -80,6 +82,11 @@ export function AsignacionView() {
     const newServicios = [...serviciosAsignados];
     newServicios.splice(index, 1);
     setServiciosAsignados(newServicios);
+    // Automatically save after removing
+    if (selectedCliente) {
+      updateCliente(selectedCliente.id, { serviciosAsignados: newServicios });
+       toast({ title: "Servicio Eliminado", description: "El servicio se ha eliminado y los cambios se guardaron." });
+    }
   }
 
  const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string) => {
@@ -142,6 +149,12 @@ export function AsignacionView() {
           maximumFractionDigits: 2,
       }).format(numValue);
   };
+  
+  const clienteOptions = React.useMemo(() => 
+    clientes.map(c => ({
+        value: c.id,
+        label: `${c.codigo} - ${c.nombre}`
+    })), [clientes]);
 
   return (
     <div className="p-6 space-y-6">
@@ -152,53 +165,15 @@ export function AsignacionView() {
         </CardHeader>
         <CardContent>
           <Label htmlFor="cliente-select">Cliente</Label>
-          <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={openCombobox}
-                className="w-full justify-between"
+           <Combobox
+                options={clienteOptions}
+                value={selectedCliente?.id || ''}
+                onValueChange={handleClienteChange}
+                placeholder="Seleccione un cliente..."
+                searchPlaceholder="Buscar cliente..."
+                notFoundMessage="No se encontró el cliente."
                 disabled={isLoading}
-              >
-                {selectedCliente
-                  ? `${selectedCliente.codigo} - ${selectedCliente.nombre}`
-                  : isLoading ? "Cargando clientes..." : "Seleccione un cliente"}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="w-[--radix-popover-trigger-width] p-0"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-            >
-              <Command>
-                <CommandInput placeholder="Buscar cliente por código o nombre..." />
-                <CommandList>
-                  <CommandEmpty>No se encontró el cliente.</CommandEmpty>
-                  <CommandGroup>
-                    {clientes.map((cliente) => (
-                      <CommandItem
-                        key={cliente.id}
-                        value={cliente.id}
-                        onSelect={(currentValue) => {
-                           handleClienteChange(currentValue === selectedCliente?.id ? "" : currentValue);
-                           setOpenCombobox(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedCliente?.id === cliente.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {cliente.codigo} - {cliente.nombre}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+            />
         </CardContent>
       </Card>
 
@@ -250,7 +225,7 @@ export function AsignacionView() {
                     <TableBody>
                       {serviciosAsignados.length > 0 ? (
                         serviciosAsignados.map((servicio, index) => (
-                          <TableRow key={index}>
+                          <TableRow key={`${servicio.novedadId}-${index}`}>
                               <TableCell className="font-medium">{servicio.nombre}</TableCell>
                               <TableCell>
                                 <Input
@@ -258,7 +233,7 @@ export function AsignacionView() {
                                   inputMode="decimal"
                                   value={
                                     focusedInputIndex === index
-                                      ? String(servicio.cantidad).replace(',', '.')
+                                      ? String(servicio.cantidad).replace('.', ',')
                                       : formatCurrency(servicio.cantidad)
                                   }
                                   onFocus={(e) => {
