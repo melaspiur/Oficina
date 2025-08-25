@@ -28,9 +28,9 @@ type ClienteDialogProps = {
 const clienteSchema = z.object({
   codigo: z.coerce.number().min(1).max(9999),
   nombre: z.string().min(1, "El nombre es requerido"),
-  domicilio: z.string(),
-  localidad: z.string(),
-  provincia: z.string(),
+  domicilio: z.string().optional(),
+  localidad: z.string().optional(),
+  provincia: z.string().optional(),
   cuit: z.string().min(1, "El CUIT es requerido"),
   tipo: z.enum(["inscripto", "monotributo"]),
   categoria: z.coerce.number().min(1).max(5),
@@ -38,7 +38,7 @@ const clienteSchema = z.object({
 
 
 export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: ClienteDialogProps) {
-  const { register, handleSubmit, control, formState: { errors } } = useForm<Cliente>({
+    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<Cliente>({
     resolver: zodResolver(clienteSchema),
     defaultValues: cliente || {
       codigo: Math.floor(Math.random() * 9998) + 1, // sample default
@@ -49,6 +49,21 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
       categoria: 1
     }
   });
+  
+  React.useEffect(() => {
+    if (isOpen) {
+        reset(cliente || {
+            codigo: Math.floor(Math.random() * 9998) + 1,
+            nombre: "",
+            domicilio: "",
+            localidad: "",
+            provincia: "",
+            cuit: "",
+            tipo: "inscripto",
+            categoria: 1
+      });
+    }
+  }, [isOpen, cliente, reset]);
 
   const onSubmit = (data: Cliente) => {
     onSave(data)
@@ -60,48 +75,45 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
         <DialogHeader>
           <DialogTitle>{cliente ? 'Editar Cliente' : 'Nuevo Cliente'}</DialogTitle>
           <DialogDescription>
-            Completa los datos del cliente.
+            Completa los datos del cliente. Los campos con * son requeridos.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div>
-              <Label htmlFor="codigo">Código</Label>
+              <Label htmlFor="codigo">Código *</Label>
               <Input id="codigo" {...register("codigo")} />
               {errors.codigo && <p className="text-sm text-destructive mt-1">{errors.codigo.message}</p>}
             </div>
              <div>
-              <Label htmlFor="nombre">Nombre</Label>
+              <Label htmlFor="nombre">Nombre *</Label>
               <Input id="nombre" {...register("nombre")} />
                {errors.nombre && <p className="text-sm text-destructive mt-1">{errors.nombre.message}</p>}
             </div>
             <div>
               <Label htmlFor="domicilio">Domicilio</Label>
               <Input id="domicilio" {...register("domicilio")} />
-               {errors.domicilio && <p className="text-sm text-destructive mt-1">{errors.domicilio.message}</p>}
             </div>
              <div>
               <Label htmlFor="localidad">Localidad</Label>
               <Input id="localidad" {...register("localidad")} />
-               {errors.localidad && <p className="text-sm text-destructive mt-1">{errors.localidad.message}</p>}
             </div>
              <div>
               <Label htmlFor="provincia">Provincia</Label>
               <Input id="provincia" {...register("provincia")} />
-               {errors.provincia && <p className="text-sm text-destructive mt-1">{errors.provincia.message}</p>}
             </div>
              <div>
-              <Label htmlFor="cuit">CUIT</Label>
+              <Label htmlFor="cuit">CUIT *</Label>
               <Input id="cuit" {...register("cuit")} />
                {errors.cuit && <p className="text-sm text-destructive mt-1">{errors.cuit.message}</p>}
             </div>
             <div>
-              <Label htmlFor="tipo">Tipo</Label>
+              <Label htmlFor="tipo">Tipo *</Label>
               <Controller
                 name="tipo"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger id="tipo">
                       <SelectValue placeholder="Selecciona un tipo" />
                     </SelectTrigger>
@@ -114,12 +126,12 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
               />
             </div>
              <div>
-              <Label htmlFor="categoria">Categoría</Label>
+              <Label htmlFor="categoria">Categoría *</Label>
               <Controller
                 name="categoria"
                 control={control}
                 render={({ field }) => (
-                    <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
+                    <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value)}>
                     <SelectTrigger id="categoria">
                       <SelectValue placeholder="Selecciona una categoría" />
                     </SelectTrigger>

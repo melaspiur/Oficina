@@ -20,3 +20,5 @@ export type Cliente = {
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
 };
+
+export type ClienteWithId = Cliente & { id: string };
