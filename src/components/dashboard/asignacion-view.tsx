@@ -58,7 +58,7 @@ export function AsignacionView() {
       const nuevoServicio: ServicioAsignado = {
         novedadId: selectedNovedad.id,
         nombre: selectedNovedad.nombre,
-        cantidad: 1,
+        cantidad: 1.00,
         importe: selectedNovedad.importe,
       };
       setServiciosAsignados([...serviciosAsignados, nuevoServicio]);
@@ -74,13 +74,16 @@ export function AsignacionView() {
 
   const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string | number) => {
     const newServicios = [...serviciosAsignados];
-    // @ts-ignore
-    newServicios[index][field] = value;
+    const parsedValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
     
-    // Si la novedad existe, actualizamos el importe en base a la cantidad
+    if (isNaN(parsedValue)) return;
+    
+    // @ts-ignore
+    newServicios[index][field] = parsedValue;
+    
     const novedadOriginal = novedades.find(n => n.id === newServicios[index].novedadId);
     if (novedadOriginal) {
-      newServicios[index].importe = novedadOriginal.importe * Number(value);
+      newServicios[index].importe = novedadOriginal.importe * parsedValue;
     }
     
     setServiciosAsignados(newServicios);
@@ -105,12 +108,20 @@ export function AsignacionView() {
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
+      style: 'decimal',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    }).format(value || 0);
   }
+  
+    const formatInputAsCurrency = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+      const value = e.target.value;
+      const numValue = parseFloat(value.replace(/[^0-9.-]/g, ''));
+      if (!isNaN(numValue)) {
+        handleServicioChange(index, 'cantidad', numValue);
+      }
+    };
+
 
   return (
     <div className="p-6 space-y-6">
@@ -186,9 +197,9 @@ export function AsignacionView() {
                               <TableCell className="font-medium">{servicio.nombre}</TableCell>
                               <TableCell>
                                 <Input 
-                                  type="number" 
-                                  value={servicio.cantidad}
-                                  onChange={(e) => handleServicioChange(index, 'cantidad', Number(e.target.value))}
+                                  type="text" 
+                                  value={formatCurrency(servicio.cantidad)}
+                                  onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value.replace(/[^0-9,.]/g, '').replace('.', '').replace(',', '.'))}
                                   className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </TableCell>
