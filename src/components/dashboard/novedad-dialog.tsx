@@ -132,7 +132,9 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
                     onCheckedChange={handleSelectAll}
                     checked={areAllMonthsSelected}
                  />
-                <Label htmlFor="select-all" className="font-normal capitalize">Seleccionar Todos</Label>
+                <Label htmlFor="select-all" className="font-normal capitalize">
+                  {areAllMonthsSelected ? 'Deseleccionar Todos' : 'Seleccionar Todos'}
+                </Label>
             </div>
             <div className="grid grid-cols-3 gap-4">
               {mesesList.map((mes) => (
