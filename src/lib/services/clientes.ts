@@ -20,6 +20,8 @@ export async function updateCliente(id: string, cliente: Partial<Cliente>) {
 }
 
 export async function deleteCliente(id: string) {
+    // Note: This does not delete related assignments.
+    // A more robust solution might involve a cloud function to clean up.
     const clienteDoc = doc(db, "clientes", id);
     await deleteDoc(clienteDoc);
 }

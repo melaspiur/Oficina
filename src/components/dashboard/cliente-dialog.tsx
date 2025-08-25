@@ -34,10 +34,6 @@ const clienteSchema = z.object({
   cuit: z.string().min(1, "El CUIT es requerido"),
   tipo: z.enum(["inscripto", "monotributo"]),
   categoria: z.coerce.number().min(1).max(5),
-  serviciosAsignados: z.array(z.object({
-    novedadId: z.string(),
-    cantidad: z.coerce.number().min(0),
-  })).optional(),
 });
 
 
@@ -51,7 +47,6 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
       provincia: "",
       tipo: "inscripto",
       categoria: 1,
-      serviciosAsignados: []
     }
   });
 
@@ -66,7 +61,6 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
             cuit: "",
             tipo: "inscripto",
             categoria: 1,
-            serviciosAsignados: []
       });
     }
   }, [isOpen, cliente, reset]);

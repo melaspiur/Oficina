@@ -12,13 +12,13 @@ import {
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import type { ServicioAsignado } from "@/lib/types"
+import type { AsignacionViewModel } from "@/lib/types"
 
 type AsignacionDialogProps = {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
   onSave: (nuevaCantidad: number) => void
-  asignacion: ServicioAsignado | null
+  asignacion: AsignacionViewModel | null
 }
 
 export function AsignacionDialog({ isOpen, onOpenChange, onSave, asignacion }: AsignacionDialogProps) {

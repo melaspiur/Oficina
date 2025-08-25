@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -15,56 +14,94 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, PlusCircle, Loader2, Edit } from "lucide-react"
-import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types"
-import { getClientes, updateCliente } from "@/lib/services/clientes"
+import type { ClienteWithId, NovedadWithId, AsignacionViewModel } from "@/lib/types"
+import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
+import { getAsignacionesByClienteId, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
 
 export function AsignacionClienteView() {
+  // Global data
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
   const [novedades, setNovedades] = React.useState<NovedadWithId[]>([])
-  const [selectedCliente, setSelectedCliente] = React.useState<ClienteWithId | null>(null)
   
+  // State for the selected client and their assignments
+  const [selectedCliente, setSelectedCliente] = React.useState<ClienteWithId | null>(null)
+  const [asignacionesCliente, setAsignacionesCliente] = React.useState<AsignacionViewModel[]>([]);
+  
+  // State for the "add new" form
   const [selectedNovedadId, setSelectedNovedadId] = React.useState<string | null>(null)
   const [newCantidad, setNewCantidad] = React.useState<number | string>(1.00)
 
+  // UI State
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isLoadingAsignaciones, setIsLoadingAsignaciones] = React.useState(false);
   const [isDialogEditOpen, setIsDialogEditOpen] = React.useState(false);
-  const [asignacionToEdit, setAsignacionToEdit] = React.useState<ServicioAsignado | null>(null);
+  const [asignacionToEdit, setAsignacionToEdit] = React.useState<AsignacionViewModel | null>(null);
   const { toast } = useToast()
 
+  // Initial data fetch for clients and novedades
   React.useEffect(() => {
-    const fetchData = async () => {
+    const fetchInitialData = async () => {
         setIsLoading(true);
         try {
             const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
-            const sortedClientes = clientesData.sort((a, b) => a.codigo - b.codigo);
-            setClientes(sortedClientes);
+            setClientes(clientesData.sort((a, b) => a.codigo - b.codigo));
             setNovedades(novedadesData.sort((a, b) => a.codigo - b.codigo));
         } catch (error) {
             console.error("Error fetching data:", error);
-            toast({ title: "Error", description: "No se pudieron cargar los datos.", variant: "destructive" });
+            toast({ title: "Error", description: "No se pudieron cargar los datos iniciales.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
     };
-    fetchData();
+    fetchInitialData();
   }, [toast]);
   
+  const fetchAsignacionesForCliente = React.useCallback(async (clienteId: string) => {
+      if (!clienteId) return;
+      setIsLoadingAsignaciones(true);
+      try {
+          const asignacionesData = await getAsignacionesByClienteId(clienteId);
+          const novedadesMap = new Map(novedades.map(n => [n.id, n]));
+          const cliente = clientes.find(c => c.id === clienteId);
+          if (!cliente) return;
+
+          const viewModel: AsignacionViewModel[] = asignacionesData.map(a => {
+              const novedad = novedadesMap.get(a.novedadId);
+              if (!novedad) return null;
+              return {
+                  id: a.id,
+                  clienteId: cliente.id,
+                  clienteCodigo: cliente.codigo,
+                  clienteNombre: cliente.nombre,
+                  novedadId: novedad.id,
+                  novedadCodigo: novedad.codigo,
+                  novedadNombre: novedad.nombre,
+                  cantidad: a.cantidad,
+                  importe: novedad.importe * a.cantidad,
+              };
+          }).filter((item): item is AsignacionViewModel => item !== null);
+
+          setAsignacionesCliente(viewModel);
+
+      } catch (error) {
+          console.error("Error fetching assignments for client:", error);
+          toast({ title: "Error", description: "No se pudieron cargar las asignaciones del cliente.", variant: "destructive" });
+      } finally {
+          setIsLoadingAsignaciones(false);
+      }
+  }, [clientes, novedades, toast]);
+
   const handleSelectCliente = (clienteId: string) => {
     const cliente = clientes.find(c => c.id === clienteId);
     setSelectedCliente(cliente || null);
+    setAsignacionesCliente([]); // Clear previous assignments
+    if (clienteId) {
+        fetchAsignacionesForCliente(clienteId);
+    }
   }
-
-  const refreshSelectedClientData = React.useCallback(async () => {
-    if (!selectedCliente) return;
-    const clientesData = await getClientes();
-    const updatedClient = clientesData.find(c => c.id === selectedCliente.id);
-    const sortedClientes = clientesData.sort((a, b) => a.codigo - b.codigo);
-    setClientes(sortedClientes);
-    setSelectedCliente(updatedClient || null);
-  }, [selectedCliente]);
 
   const handleAddServicio = async () => {
     if (!selectedCliente || !selectedNovedadId) {
@@ -77,67 +114,44 @@ export function AsignacionClienteView() {
       return;
     }
 
-    const serviciosActuales = selectedCliente.serviciosAsignados || [];
-
-    if (serviciosActuales.some(s => s.novedadId === selectedNovedadId)) {
-        toast({ title: "Servicio Duplicado", description: "Esta novedad ya ha sido asignada a este cliente.", variant: "destructive" });
-        return;
-    }
-
-    const nuevoServicio = {
-      novedadId: selectedNovedadId,
-      cantidad: cantidadNum,
-    };
-    
-    const nuevosServiciosAsignados = [...serviciosActuales, nuevoServicio];
-
     try {
-        await updateCliente(selectedCliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+        await addAsignacion({
+            clienteId: selectedCliente.id,
+            novedadId: selectedNovedadId,
+            cantidad: cantidadNum,
+        });
         toast({ title: "Asignación Creada", description: "La novedad se asignó correctamente." });
-        await refreshSelectedClientData();
+        fetchAsignacionesForCliente(selectedCliente.id); // Refresh list
         setSelectedNovedadId(null);
         setNewCantidad(1.00);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error adding service:", error);
-        toast({ title: "Error", description: "No se pudo guardar la asignación.", variant: "destructive" });
+        toast({ title: "Error", description: error.message || "No se pudo guardar la asignación.", variant: "destructive" });
     }
   };
 
-  const handleRemoveServicio = async (novedadId: string) => {
-     if (!selectedCliente) return;
-    
-    const nuevosServiciosAsignados = (selectedCliente.serviciosAsignados || []).filter(
-      s => s.novedadId !== novedadId
-    );
-
+  const handleRemoveServicio = async (asignacionId: string) => {
     try {
-        await updateCliente(selectedCliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+        await deleteAsignacion(asignacionId);
         toast({ title: "Asignación Eliminada", description: "La asignación se ha eliminado correctamente." });
-        await refreshSelectedClientData();
+        if(selectedCliente) fetchAsignacionesForCliente(selectedCliente.id);
     } catch (error) {
         console.error("Error removing service:", error);
         toast({ title: "Error", description: "No se pudo eliminar la asignación.", variant: "destructive" });
     }
   };
 
-  const handleEditServicio = (asignacion: ServicioAsignado) => {
+  const handleEditServicio = (asignacion: AsignacionViewModel) => {
     setAsignacionToEdit(asignacion);
     setIsDialogEditOpen(true);
   };
 
   const handleSaveEdit = async (nuevaCantidad: number) => {
-    if (!asignacionToEdit || !selectedCliente) return;
-
-    const nuevosServiciosAsignados = (selectedCliente.serviciosAsignados || []).map(servicio =>
-      servicio.novedadId === asignacionToEdit.novedadId
-        ? { ...servicio, cantidad: nuevaCantidad }
-        : servicio
-    );
-
+    if (!asignacionToEdit) return;
     try {
-      await updateCliente(selectedCliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+      await updateAsignacion(asignacionToEdit.id, { cantidad: nuevaCantidad });
       toast({ title: "Asignación Actualizada", description: "La cantidad se actualizó correctamente." });
-      await refreshSelectedClientData();
+      if(selectedCliente) fetchAsignacionesForCliente(selectedCliente.id);
     } catch (error) {
       console.error("Error updating service:", error);
       toast({ title: "Error", description: "No se pudo actualizar la asignación.", variant: "destructive" });
@@ -154,26 +168,6 @@ export function AsignacionClienteView() {
           maximumFractionDigits: 2,
       }).format(value);
   };
-
-  const getAsignacionesDelCliente = () => {
-    if (!selectedCliente) return [];
-    return (selectedCliente.serviciosAsignados || []).map(servicio => {
-        const novedad = novedades.find(n => n.id === servicio.novedadId);
-        if (!novedad) return null; // Should not happen if data is consistent
-        return {
-            clienteId: selectedCliente.id,
-            clienteCodigo: selectedCliente.codigo,
-            clienteNombre: selectedCliente.nombre,
-            novedadId: servicio.novedadId,
-            novedadCodigo: novedad.codigo,
-            novedadNombre: novedad.nombre,
-            cantidad: servicio.cantidad,
-            importe: novedad.importe * servicio.cantidad
-        };
-    }).filter(Boolean) as ServicioAsignado[];
-  };
-
-  const asignacionesDelCliente = getAsignacionesDelCliente();
 
   return (
     <div className="p-6 space-y-6">
@@ -249,16 +243,22 @@ export function AsignacionClienteView() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {asignacionesDelCliente.length > 0 ? (
-                        asignacionesDelCliente.map((asignacion) => (
-                            <TableRow key={asignacion.novedadId}>
+                        {isLoadingAsignaciones ? (
+                             <TableRow>
+                                <TableCell colSpan={3} className="text-center h-24">
+                                    <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                                </TableCell>
+                            </TableRow>
+                        ) : asignacionesCliente.length > 0 ? (
+                        asignacionesCliente.map((asignacion) => (
+                            <TableRow key={asignacion.id}>
                                 <TableCell className="font-medium">{`${asignacion.novedadCodigo} - ${asignacion.novedadNombre}`}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(asignacion.cantidad)}</TableCell>
                                 <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => handleEditServicio(asignacion)}>
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleRemoveServicio(asignacion.novedadId)}>
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveServicio(asignacion.id)}>
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                                 </TableCell>
@@ -288,4 +288,3 @@ export function AsignacionClienteView() {
     </div>
   )
 }
-    

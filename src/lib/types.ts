@@ -10,8 +10,9 @@ export type Event = {
   description: string;
 };
 
-// This is a "view model" for display purposes, created by combining Cliente and Novedad data.
-export type ServicioAsignado = {
+// This is a "view model" for display purposes, created by combining data.
+export type AsignacionViewModel = {
+  id: string; // The ID of the assignment document itself
   clienteId: string; 
   clienteCodigo: number;
   clienteNombre: string;
@@ -19,7 +20,7 @@ export type ServicioAsignado = {
   novedadCodigo: number; 
   novedadNombre: string;
   cantidad: number;
-  importe: number; // Calculated on the fly: novedad.importe * cantidad
+  importe: number;
 };
 
 export type Cliente = {
@@ -31,10 +32,7 @@ export type Cliente = {
   cuit: string;
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
-  serviciosAsignados?: { // This is what's stored in Firestore
-    novedadId: string;
-    cantidad: number;
-  }[];
+  // serviciosAsignados is now removed from here.
 };
 
 export type ClienteWithId = Cliente & { id: string };
@@ -62,3 +60,12 @@ export type Novedad = {
 };
 
 export type NovedadWithId = Novedad & { id: string };
+
+// New type for the 'asignaciones' collection documents
+export type Asignacion = {
+    clienteId: string;
+    novedadId: string;
+    cantidad: number;
+}
+
+export type AsignacionWithId = Asignacion & { id: string };

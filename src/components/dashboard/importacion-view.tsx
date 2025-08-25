@@ -7,20 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getClientes, updateCliente } from "@/lib/services/clientes"
+import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
+import { addAsignacion } from "@/lib/services/asignaciones"
 import type { ClienteWithId, NovedadWithId } from "@/lib/types"
 
 type LogMessage = {
   type: 'success' | 'info' | 'warning' | 'error';
   message: string;
 };
-
-// Type for the object that will be stored in Firestore
-type ServicioToStore = {
-  novedadId: string;
-  cantidad: number;
-}
 
 export function ImportacionView() {
   const [inputText, setInputText] = React.useState("")
@@ -68,84 +63,61 @@ export function ImportacionView() {
         return;
     }
 
-    addLog({ type: 'info', message: 'Iniciando procesamiento...' });
+    addLog({ type: 'info', message: 'Iniciando procesamiento de importación masiva...' });
 
     const lines = inputText.split('\n');
     let currentCliente: ClienteWithId | null = null;
-    let serviciosParaCliente: ServicioToStore[] = [];
-    let updatesCount = 0;
-    const updatePromises: Promise<any>[] = [];
-    let clienteParaActualizar: ClienteWithId | null = null;
-
-    const processLastClient = async () => {
-        if (clienteParaActualizar) {
-            const updatePromise = updateCliente(clienteParaActualizar.id, { serviciosAsignados: serviciosParaCliente })
-                .then(() => {
-                    addLog({ type: 'success', message: `Cliente "${clienteParaActualizar!.nombre}": ${serviciosParaCliente.length} novedades asignadas correctamente.` });
-                    updatesCount++;
-                })
-                .catch(() => {
-                    addLog({ type: 'error', message: `Error al actualizar el cliente "${clienteParaActualizar!.nombre}".` });
-                });
-            updatePromises.push(updatePromise);
-        }
-    }
+    let assignmentPromises: Promise<any>[] = [];
+    let processedCount = 0;
 
     for (const line of lines) {
-      if (line.includes('; ---------------------------')) {
-        await processLastClient(); // Process previous client
-        
-        // Start new client
-        const nombreCliente = line.split(';')[0].trim();
-        serviciosParaCliente = [];
-        currentCliente = null;
-        clienteParaActualizar = null;
-
-        if (nombreCliente) {
-            currentCliente = clientesDb.find(c => c.nombre.trim().toUpperCase() === nombreCliente.toUpperCase()) || null;
-            if (!currentCliente) {
-                addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado. Se omitirá.` });
+        if (line.includes('; ---------------------------')) {
+            const nombreCliente = line.split(';')[0].trim();
+            if (nombreCliente) {
+                currentCliente = clientesDb.find(c => c.nombre.trim().toUpperCase() === nombreCliente.toUpperCase()) || null;
+                if (!currentCliente) {
+                    addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado en la base de datos. Se omitirán sus novedades.` });
+                }
             } else {
-                 addLog({ type: 'info', message: `Procesando cliente: "${currentCliente.nombre}"...` });
-                 clienteParaActualizar = currentCliente;
-                 serviciosParaCliente = [...(currentCliente.serviciosAsignados || [])] // Start with existing services
+                currentCliente = null; // Blank line or separator for a non-existent client
+            }
+        } else if (currentCliente) { // This is a line with a novedad
+            const parts = line.split(';').map(p => p.trim());
+            if (parts.length === 3) {
+                const [codigoStr, , cantidadStr] = parts;
+                const codigo = parseInt(codigoStr, 10);
+                const cantidad = parseFloat(cantidadStr.replace(',', '.'));
+
+                if (isNaN(codigo) || isNaN(cantidad)) {
+                    addLog({ type: 'warning', message: `Línea de novedad inválida para "${currentCliente.nombre}": ${line}` });
+                    continue;
+                }
+
+                const novedad = novedadesDb.find(n => n.codigo === codigo);
+                if (!novedad) {
+                    addLog({ type: 'warning', message: `Novedad con código ${codigo} no encontrada. Se omitirá para "${currentCliente.nombre}".` });
+                    continue;
+                }
+
+                // Create a new assignment document
+                const promise = addAsignacion({
+                    clienteId: currentCliente.id,
+                    novedadId: novedad.id,
+                    cantidad: cantidad
+                }).then(() => {
+                    addLog({ type: 'success', message: `Asignación creada: Cliente "${currentCliente?.nombre}" -> Novedad "${novedad.nombre}" (Cant: ${cantidad}).` });
+                    processedCount++;
+                }).catch((error) => {
+                    addLog({ type: 'error', message: `Error al asignar novedad ${novedad.nombre} a ${currentCliente?.nombre}: ${error.message}` });
+                });
+                assignmentPromises.push(promise);
             }
         }
-
-      } else if (currentCliente) {
-        const parts = line.split(';').map(p => p.trim());
-        if (parts.length === 3) {
-          const [codigoStr, , cantidadStr] = parts;
-          const codigo = parseInt(codigoStr, 10);
-          const cantidad = parseFloat(cantidadStr.replace(',', '.'));
-
-          if (isNaN(codigo) || isNaN(cantidad)) {
-            addLog({ type: 'warning', message: `Línea de novedad inválida para "${currentCliente.nombre}": ${line}` });
-            continue;
-          }
-
-          const novedad = novedadesDb.find(n => n.codigo === codigo);
-          if (!novedad) {
-            addLog({ type: 'warning', message: `Novedad con código ${codigo} no encontrada. Se omitirá para "${currentCliente.nombre}".` });
-            continue;
-          }
-
-          // Avoid duplicates
-          if (!serviciosParaCliente.some(s => s.novedadId === novedad.id)) {
-            serviciosParaCliente.push({
-              novedadId: novedad.id,
-              cantidad: cantidad,
-            });
-          }
-        }
-      }
     }
 
-    await processLastClient(); // Process the very last client in the file
-
-    await Promise.all(updatePromises);
+    await Promise.all(assignmentPromises);
     
-    addLog({ type: 'info', message: `Proceso completado. Se actualizaron ${updatesCount} clientes.` });
+    addLog({ type: 'info', message: `Proceso completado. Se procesaron ${processedCount} asignaciones.` });
     setIsProcessing(false)
   }
 
@@ -155,9 +127,9 @@ export function ImportacionView() {
         <CardHeader>
           <CardTitle>Importar y Asignar Novedades</CardTitle>
           <CardDescription>
-            Pegue el listado de texto para asignar masivamente las novedades a los clientes.
-            El sistema buscará cada cliente por nombre y cada novedad por código para realizar la asignación.
-            Las asignaciones existentes no se eliminarán, solo se agregarán las nuevas.
+            Pegue el listado de texto para crear masivamente las asignaciones.
+            El sistema buscará cada cliente por nombre y cada novedad por código para crear un nuevo registro de asignación.
+            Si una asignación para la misma novedad y cliente ya existe, se mostrará un error y se omitirá.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

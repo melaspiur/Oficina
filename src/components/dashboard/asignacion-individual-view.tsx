@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -15,16 +14,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, PlusCircle, Loader2, Edit } from "lucide-react"
-import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types"
-import { getClientes, updateCliente } from "@/lib/services/clientes"
+import type { ClienteWithId, NovedadWithId, AsignacionViewModel, AsignacionWithId } from "@/lib/types"
+import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
+import { getAsignaciones, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
 
 export function AsignacionIndividualView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
   const [novedades, setNovedades] = React.useState<NovedadWithId[]>([])
-  const [allAsignaciones, setAllAsignaciones] = React.useState<ServicioAsignado[]>([])
+  const [allAsignaciones, setAllAsignaciones] = React.useState<AsignacionViewModel[]>([])
   
   const [selectedClienteId, setSelectedClienteId] = React.useState<string | null>(null)
   const [selectedNovedadId, setSelectedNovedadId] = React.useState<string | null>(null)
@@ -32,37 +32,45 @@ export function AsignacionIndividualView() {
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [isDialogEditOpen, setIsDialogEditOpen] = React.useState(false);
-  const [asignacionToEdit, setAsignacionToEdit] = React.useState<ServicioAsignado | null>(null);
+  const [asignacionToEdit, setAsignacionToEdit] = React.useState<AsignacionViewModel | null>(null);
   const { toast } = useToast()
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
+      const [clientesData, novedadesData, asignacionesData] = await Promise.all([
+          getClientes(), 
+          getNovedades(),
+          getAsignaciones()
+      ]);
+
+      const clientesMap = new Map(clientesData.map(c => [c.id, c]));
+      const novedadesMap = new Map(novedadesData.map(n => [n.id, n]));
+
       const sortedClientes = clientesData.sort((a, b) => a.codigo - b.codigo);
       setClientes(sortedClientes);
       const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo);
       setNovedades(sortedNovedades);
+      
+      const viewModel: AsignacionViewModel[] = asignacionesData.map(asignacion => {
+        const cliente = clientesMap.get(asignacion.clienteId);
+        const novedad = novedadesMap.get(asignacion.novedadId);
+        if (!cliente || !novedad) return null;
 
-      const flatAsignaciones: ServicioAsignado[] = [];
-      sortedClientes.forEach(cliente => {
-        cliente.serviciosAsignados?.forEach(servicio => {
-          const novedad = sortedNovedades.find(n => n.id === servicio.novedadId);
-          if (novedad) {
-            flatAsignaciones.push({
-              clienteId: cliente.id,
-              clienteCodigo: cliente.codigo,
-              clienteNombre: cliente.nombre,
-              novedadId: servicio.novedadId,
-              novedadCodigo: novedad.codigo,
-              novedadNombre: novedad.nombre,
-              cantidad: servicio.cantidad,
-              importe: novedad.importe * servicio.cantidad
-            });
-          }
-        });
-      });
-      setAllAsignaciones(flatAsignaciones.sort((a, b) => a.clienteCodigo - b.clienteCodigo));
+        return {
+          id: asignacion.id,
+          clienteId: cliente.id,
+          clienteCodigo: cliente.codigo,
+          clienteNombre: cliente.nombre,
+          novedadId: novedad.id,
+          novedadCodigo: novedad.codigo,
+          novedadNombre: novedad.nombre,
+          cantidad: asignacion.cantidad,
+          importe: novedad.importe * asignacion.cantidad
+        };
+      }).filter((item): item is AsignacionViewModel => item !== null);
+      
+      setAllAsignaciones(viewModel.sort((a, b) => a.clienteCodigo - b.clienteCodigo || a.novedadCodigo - b.novedadCodigo));
 
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -87,46 +95,26 @@ export function AsignacionIndividualView() {
       return;
     }
 
-    const cliente = clientes.find(c => c.id === selectedClienteId);
-    if (!cliente) return;
-
-    const serviciosActuales = cliente.serviciosAsignados || [];
-
-    if (serviciosActuales.some(s => s.novedadId === selectedNovedadId)) {
-        toast({ title: "Servicio Duplicado", description: "Esta novedad ya ha sido asignada a este cliente.", variant: "destructive" });
-        return;
-    }
-
-    const nuevoServicio = {
-      novedadId: selectedNovedadId,
-      cantidad: cantidadNum,
-    };
-    
-    const nuevosServiciosAsignados = [...serviciosActuales, nuevoServicio];
-
     try {
-        await updateCliente(cliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+        await addAsignacion({
+            clienteId: selectedClienteId,
+            novedadId: selectedNovedadId,
+            cantidad: cantidadNum,
+        });
         toast({ title: "Asignación Creada", description: "La novedad se asignó correctamente." });
         fetchData(); 
         setSelectedClienteId(null);
         setSelectedNovedadId(null);
         setNewCantidad(1.00);
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error adding service:", error);
-        toast({ title: "Error", description: "No se pudo guardar la asignación.", variant: "destructive" });
+        toast({ title: "Error", description: error.message || "No se pudo guardar la asignación.", variant: "destructive" });
     }
   };
 
-  const handleRemoveServicio = async (asignacion: ServicioAsignado) => {
-    const cliente = clientes.find(c => c.id === asignacion.clienteId);
-    if (!cliente) return;
-    
-    const nuevosServiciosAsignados = (cliente.serviciosAsignados || []).filter(
-      s => s.novedadId !== asignacion.novedadId
-    );
-
+  const handleRemoveServicio = async (asignacion: AsignacionViewModel) => {
     try {
-        await updateCliente(cliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+        await deleteAsignacion(asignacion.id);
         toast({ title: "Asignación Eliminada", description: "La asignación se ha eliminado correctamente." });
         fetchData();
     } catch (error) {
@@ -135,7 +123,7 @@ export function AsignacionIndividualView() {
     }
   };
 
-  const handleEditServicio = (asignacion: ServicioAsignado) => {
+  const handleEditServicio = (asignacion: AsignacionViewModel) => {
     setAsignacionToEdit(asignacion);
     setIsDialogEditOpen(true);
   };
@@ -143,17 +131,8 @@ export function AsignacionIndividualView() {
   const handleSaveEdit = async (nuevaCantidad: number) => {
     if (!asignacionToEdit) return;
 
-    const cliente = clientes.find(c => c.id === asignacionToEdit.clienteId);
-    if (!cliente) return;
-
-    const nuevosServiciosAsignados = (cliente.serviciosAsignados || []).map(servicio =>
-      servicio.novedadId === asignacionToEdit.novedadId
-        ? { ...servicio, cantidad: nuevaCantidad }
-        : servicio
-    );
-
     try {
-      await updateCliente(cliente.id, { serviciosAsignados: nuevosServiciosAsignados });
+      await updateAsignacion(asignacionToEdit.id, { cantidad: nuevaCantidad });
       toast({ title: "Asignación Actualizada", description: "La cantidad se actualizó correctamente." });
       fetchData();
     } catch (error) {
@@ -246,8 +225,8 @@ export function AsignacionIndividualView() {
                     </TableCell>
                   </TableRow>
                 ) : allAsignaciones.length > 0 ? (
-                  allAsignaciones.map((asignacion, index) => (
-                    <TableRow key={`${asignacion.clienteId}-${asignacion.novedadId}-${index}`}>
+                  allAsignaciones.map((asignacion) => (
+                    <TableRow key={asignacion.id}>
                       <TableCell>{asignacion.clienteCodigo}</TableCell>
                       <TableCell className="font-medium">{asignacion.clienteNombre}</TableCell>
                        <TableCell>{`${asignacion.novedadCodigo} - ${asignacion.novedadNombre}`}</TableCell>
@@ -283,5 +262,3 @@ export function AsignacionIndividualView() {
     </div>
   )
 }
-
-    
