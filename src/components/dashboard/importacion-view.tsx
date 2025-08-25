@@ -75,10 +75,16 @@ export function ImportacionView() {
         if (trimmedLine.includes('; ---------------------------')) {
             const nombreCliente = trimmedLine.split(';')[0].trim();
             if (nombreCliente) {
-                // Find client by name, trimming and converting to upper case for better matching
-                currentCliente = clientesDb.find(c => c.nombre.trim().toUpperCase() === nombreCliente.toUpperCase()) || null;
+                // Normalize names for robust matching: remove extra spaces and convert to uppercase
+                const normalizeName = (name: string) => name.replace(/\s+/g, ' ').trim().toUpperCase();
+                const nombreClienteNormalizado = normalizeName(nombreCliente);
+
+                currentCliente = clientesDb.find(c => normalizeName(c.nombre) === nombreClienteNormalizado) || null;
+                
                 if (!currentCliente) {
                     addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado en la base de datos. Se omitirán sus novedades.` });
+                } else {
+                    addLog({ type: 'info', message: `Procesando cliente: ${currentCliente.nombre}`});
                 }
             } else {
                 currentCliente = null; 
@@ -101,7 +107,6 @@ export function ImportacionView() {
                     continue;
                 }
 
-                // Create a new assignment document
                 const promise = addAsignacion({
                     clienteId: currentCliente.id,
                     novedadId: novedad.id,
