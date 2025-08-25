@@ -27,6 +27,7 @@ import {
   ChevronDown,
   Newspaper,
   User,
+  ClipboardList,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -35,6 +36,7 @@ import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionView } from './facturacion-view';
+import { AsignacionView } from './asignacion-view';
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -65,6 +67,8 @@ export function MainLayout() {
         return <ClientesView />;
       case 'clientes-novedades':
         return <NovedadesView />;
+      case 'clientes-asignacion':
+        return <AsignacionView />;
       case 'facturacion':
         return <FacturacionView />;
       case 'informes':
@@ -79,6 +83,7 @@ export function MainLayout() {
   const getHeaderTitle = () => {
     if (activeView.startsWith('clientes-')) {
       const title = activeView.split('-')[1];
+      if (title === 'asignacion') return "Asignación de Novedades";
       return title.charAt(0).toUpperCase() + title.slice(1);
     }
      const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
@@ -130,6 +135,14 @@ export function MainLayout() {
                       isActive={activeView === 'clientes-novedades'}>
                       <Newspaper />
                       <span>Novedades</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                   <SidebarMenuSubItem>
+                    <SidebarMenuSubButton 
+                      onClick={() => setActiveView('clientes-asignacion')} 
+                      isActive={activeView === 'clientes-asignacion'}>
+                      <ClipboardList />
+                      <span>Asignación</span>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
