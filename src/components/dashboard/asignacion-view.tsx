@@ -133,7 +133,7 @@ export function AsignacionView() {
 
   const formatCurrency = (value: number | string) => {
       const numValue = typeof value === 'string' ? parseFloat(value.replace(',', '.')) : value;
-      if (isNaN(numValue)) {
+      if (isNaN(numValue) || value === '' || value === null) {
         return '';
       }
       return new Intl.NumberFormat('es-AR', {
@@ -175,9 +175,9 @@ export function AsignacionView() {
                     {clientes.map((cliente) => (
                       <CommandItem
                         key={cliente.id}
-                        value={`${cliente.codigo} ${cliente.nombre}`}
-                        onSelect={() => {
-                           handleClienteChange(cliente.id);
+                        value={cliente.id}
+                        onSelect={(currentValue) => {
+                           handleClienteChange(currentValue);
                            setOpenCombobox(false);
                         }}
                       >
@@ -264,7 +264,6 @@ export function AsignacionView() {
                                   onBlur={(e) => {
                                       setFocusedInputIndex(null)
                                       handleServicioChange(index, 'cantidad', e.target.value)
-                                      // Se guarda al perder foco
                                       handleSaveChanges()
                                   }}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
