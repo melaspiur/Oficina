@@ -15,50 +15,52 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import {
-  LayoutGrid,
-  Calendar,
-  Mail,
+  Users,
+  FileText,
+  LineChart,
   Settings,
   BotMessageSquare,
+  LogOut,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { TaskSuggestions } from './task-suggestions';
-import { EmailDrafter } from './email-drafter';
-import { CalendarView } from './calendar-view';
-import { SettingsDialog } from './settings-dialog';
+import { useRouter } from 'next/navigation';
+import { getAuth, signOut } from 'firebase/auth';
+import { app } from '@/lib/firebase';
+
+// Vistas dinámicas
+const PlaceholderView = ({ title }: { title: string }) => (
+  <div className="p-6">
+    <h2 className="text-2xl font-bold">{title}</h2>
+    <p>Contenido para {title} irá aquí.</p>
+  </div>
+);
 
 export function MainLayout() {
-  const [activeView, setActiveView] = React.useState('dashboard');
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [activeView, setActiveView] = React.useState('clientes');
+  const router = useRouter();
+  const auth = getAuth(app);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   const renderContent = () => {
     switch (activeView) {
-      case 'dashboard':
-        return (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <TaskSuggestions />
-            </div>
-            <div className="lg:col-span-1">
-              <CalendarView />
-            </div>
-          </div>
-        );
-      case 'email':
-        return <EmailDrafter />;
-      case 'calendar':
-        return <CalendarView />;
+      case 'clientes':
+        return <PlaceholderView title="Clientes" />;
+      case 'facturacion':
+        return <PlaceholderView title="Facturación" />;
+      case 'informes':
+        return <PlaceholderView title="Informes" />;
+      case 'ajustes':
+        return <PlaceholderView title="Ajustes" />;
       default:
-        return (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <TaskSuggestions />
-            </div>
-            <div className="lg:col-span-1">
-              <CalendarView />
-            </div>
-          </div>
-        );
+        return <PlaceholderView title="Clientes" />;
     }
   };
 
@@ -71,28 +73,34 @@ export function MainLayout() {
               <BotMessageSquare className="h-6 w-6 text-primary" />
             </Button>
             <h2 className="text-lg font-semibold tracking-tight font-headline">
-              Asistente Virtual
+              Oficina Virtual
             </h2>
           </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('dashboard')} isActive={activeView === 'dashboard'} tooltip="Dashboard">
-                <LayoutGrid />
-                <span>Dashboard</span>
+              <SidebarMenuButton onClick={() => setActiveView('clientes')} isActive={activeView === 'clientes'} tooltip="Clientes">
+                <Users />
+                <span>Clientes</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('email')} isActive={activeView === 'email'} tooltip="Redactar Correo">
-                <Mail />
-                <span>Redactar Correo</span>
+              <SidebarMenuButton onClick={() => setActiveView('facturacion')} isActive={activeView === 'facturacion'} tooltip="Facturación">
+                <FileText />
+                <span>Facturación</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('calendar')} isActive={activeView === 'calendar'} tooltip="Calendario">
-                <Calendar />
-                <span>Calendario</span>
+              <SidebarMenuButton onClick={() => setActiveView('informes')} isActive={activeView === 'informes'} tooltip="Informes">
+                <LineChart />
+                <span>Informes</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => setActiveView('ajustes')} isActive={activeView === 'ajustes'} tooltip="Ajustes">
+                <Settings />
+                <span>Ajustes</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -101,32 +109,31 @@ export function MainLayout() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://placehold.co/100x100" alt="User Avatar" />
-                <AvatarFallback>AV</AvatarFallback>
+                <AvatarImage src={auth.currentUser?.photoURL || 'https://placehold.co/100x100'} alt="User Avatar" />
+                <AvatarFallback>{auth.currentUser?.email?.substring(0,2).toUpperCase() || 'AV'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">Usuario</span>
+                <span className="text-sm font-medium">{auth.currentUser?.displayName || 'Usuario'}</span>
                 <span className="text-xs text-muted-foreground">
-                  en linea
+                  {auth.currentUser?.email}
                 </span>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsSettingsOpen(true)} className="h-9 w-9">
-              <Settings />
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9" tooltip="Cerrar Sesión">
+              <LogOut />
             </Button>
           </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-          <h1 className="text-xl font-semibold font-headline capitalize">{activeView.replace('-', ' ')}</h1>
+          <h1 className="text-xl font-semibold font-headline capitalize">{activeView}</h1>
           <SidebarTrigger />
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto bg-background/95">
           {renderContent()}
         </main>
       </SidebarInset>
-      <SettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </SidebarProvider>
   );
 }
