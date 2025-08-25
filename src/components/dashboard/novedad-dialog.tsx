@@ -83,13 +83,14 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
   }, [isOpen, novedad, reset]);
   
   const areAllMonthsSelected = React.useMemo(() => {
+      // Ensure mesesWatch is defined before checking its values
+      if (!mesesWatch) return false;
       return mesesList.every(mes => mesesWatch[mes]);
   }, [mesesWatch]);
 
-  const handleSelectAll = () => {
-    const shouldSelectAll = !areAllMonthsSelected;
+  const handleSelectAll = (checked: boolean) => {
     mesesList.forEach(mes => {
-        setValue(`meses.${mes}`, shouldSelectAll, { shouldValidate: true, shouldDirty: true });
+      setValue(`meses.${mes}`, checked, { shouldValidate: true, shouldDirty: true });
     });
   };
 
