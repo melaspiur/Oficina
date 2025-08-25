@@ -9,3 +9,14 @@ export type Event = {
   title: string;
   description: string;
 };
+
+export type Cliente = {
+  codigo: number;
+  nombre: string;
+  domicilio: string;
+  localidad: string;
+  provincia: string;
+  cuit: string;
+  tipo: 'inscripto' | 'monotributo';
+  categoria: 1 | 2 | 3 | 4 | 5;
+};

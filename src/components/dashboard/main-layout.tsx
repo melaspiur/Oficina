@@ -12,6 +12,9 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,11 +24,15 @@ import {
   Settings,
   BotMessageSquare,
   LogOut,
+  ChevronDown,
+  Newspaper,
+  User,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
+import { ClientesView } from '@/components/dashboard/clientes-view';
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -36,7 +43,8 @@ const PlaceholderView = ({ title }: { title: string }) => (
 );
 
 export function MainLayout() {
-  const [activeView, setActiveView] = React.useState('clientes');
+  const [activeView, setActiveView] = React.useState('clientes-cliente');
+  const [isClientesOpen, setIsClientesOpen] = React.useState(true);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -51,8 +59,10 @@ export function MainLayout() {
 
   const renderContent = () => {
     switch (activeView) {
-      case 'clientes':
-        return <PlaceholderView title="Clientes" />;
+      case 'clientes-cliente':
+        return <ClientesView />;
+      case 'clientes-novedades':
+        return <PlaceholderView title="Novedades de Clientes" />;
       case 'facturacion':
         return <PlaceholderView title="Facturación" />;
       case 'informes':
@@ -60,9 +70,16 @@ export function MainLayout() {
       case 'ajustes':
         return <PlaceholderView title="Ajustes" />;
       default:
-        return <PlaceholderView title="Clientes" />;
+        return <ClientesView />;
     }
   };
+
+  const getHeaderTitle = () => {
+    if (activeView.startsWith('clientes-')) {
+      return activeView.split('-')[1];
+    }
+    return activeView;
+  }
 
   return (
     <SidebarProvider>
@@ -80,10 +97,39 @@ export function MainLayout() {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('clientes')} isActive={activeView === 'clientes'} tooltip="Clientes">
+              <SidebarMenuButton
+                onClick={() => setIsClientesOpen(!isClientesOpen)}
+                isActive={activeView.startsWith('clientes-')}
+                tooltip="Clientes"
+              >
                 <Users />
                 <span>Clientes</span>
+                 <ChevronDown
+                  className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                    isClientesOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </SidebarMenuButton>
+              {isClientesOpen && (
+                <SidebarMenuSub>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton 
+                      onClick={() => setActiveView('clientes-cliente')} 
+                      isActive={activeView === 'clientes-cliente'}>
+                      <User/>
+                      <span>Cliente</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton 
+                      onClick={() => setActiveView('clientes-novedades')} 
+                      isActive={activeView === 'clientes-novedades'}>
+                      <Newspaper />
+                      <span>Novedades</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton onClick={() => setActiveView('facturacion')} isActive={activeView === 'facturacion'} tooltip="Facturación">
@@ -127,7 +173,7 @@ export function MainLayout() {
       </Sidebar>
       <SidebarInset>
         <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-          <h1 className="text-xl font-semibold font-headline capitalize">{activeView}</h1>
+          <h1 className="text-xl font-semibold font-headline capitalize">{getHeaderTitle()}</h1>
           <SidebarTrigger />
         </header>
         <main className="flex-1 overflow-y-auto bg-background/95">
