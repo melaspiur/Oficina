@@ -181,7 +181,7 @@ export function AsignacionView() {
                         key={cliente.id}
                         value={cliente.id}
                         onSelect={(currentValue) => {
-                           handleClienteChange(currentValue);
+                           handleClienteChange(currentValue === selectedCliente?.id ? "" : currentValue);
                            setOpenCombobox(false);
                         }}
                       >
