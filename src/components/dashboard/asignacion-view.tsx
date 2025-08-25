@@ -76,8 +76,16 @@ export function AsignacionView() {
     const newServicios = [...serviciosAsignados];
     // @ts-ignore
     newServicios[index][field] = value;
+    
+    // Si la novedad existe, actualizamos el importe en base a la cantidad
+    const novedadOriginal = novedades.find(n => n.id === newServicios[index].novedadId);
+    if (novedadOriginal) {
+      newServicios[index].importe = novedadOriginal.importe * Number(value);
+    }
+    
     setServiciosAsignados(newServicios);
   }
+
 
   const handleSaveChanges = async () => {
     if (!selectedCliente) return;
@@ -93,6 +101,15 @@ export function AsignacionView() {
       console.error("Error saving changes:", error);
       toast({ title: "Error", description: "No se pudieron guardar los cambios.", variant: "destructive" });
     }
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
   }
 
   return (
@@ -172,16 +189,15 @@ export function AsignacionView() {
                                   type="number" 
                                   value={servicio.cantidad}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', Number(e.target.value))}
-                                  className="h-8"
+                                  className="h-8 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </TableCell>
                               <TableCell>
-                                <Input 
-                                  type="number" 
-                                  step="0.01"
-                                  value={servicio.importe} 
-                                  onChange={(e) => handleServicioChange(index, 'importe', Number(e.target.value))}
-                                  className="h-8"
+                                 <Input 
+                                  type="text"
+                                  value={formatCurrency(servicio.importe)} 
+                                  readOnly
+                                  className="h-8 bg-muted/50 border-none"
                                 />
                               </TableCell>
                               <TableCell className="text-right">
