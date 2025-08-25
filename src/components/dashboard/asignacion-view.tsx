@@ -34,7 +34,6 @@ export function AsignacionView() {
       try {
         const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()])
         setClientes(clientesData)
-        // Sort novedades by codigo
         const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo)
         setNovedades(sortedNovedades)
       } catch (error) {
@@ -45,7 +44,7 @@ export function AsignacionView() {
       }
     }
     fetchData()
-  }, [])
+  }, [toast])
 
   const handleClienteChange = (clienteId: string) => {
     const cliente = clientes.find(c => c.id === clienteId) || null
@@ -55,6 +54,12 @@ export function AsignacionView() {
   
   const handleAddServicio = () => {
     if (selectedNovedad) {
+      // Check if the service already exists
+      const servicioExistente = serviciosAsignados.find(s => s.novedadId === selectedNovedad.id);
+      if (servicioExistente) {
+        toast({ title: "Servicio Duplicado", description: "Esta novedad ya ha sido asignada a este cliente.", variant: "destructive" });
+        return;
+      }
       const nuevoServicio: ServicioAsignado = {
         novedadId: selectedNovedad.id,
         nombre: selectedNovedad.nombre,
@@ -73,42 +78,42 @@ export function AsignacionView() {
   }
 
   const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string | number) => {
-    const newServicios = [...serviciosAsignados]
+    const newServicios = [...serviciosAsignados];
+    const servicio = { ...newServicios[index] };
     
-    // For quantity, parse string to float, allowing decimals
     if (field === 'cantidad' && typeof value === 'string') {
-        // Allow empty string for clearing the input
-        if (value === '') {
-            // @ts-ignore
-            newServicios[index][field] = 0; // Or keep it as empty string and handle NaN later
-            setServiciosAsignados(newServicios);
-            return;
-        }
-
-        // Replace comma with dot for decimal parsing
-        const cleanedValue = value.replace(",", ".")
-        const parsedValue = parseFloat(cleanedValue)
-
+      if (value === '') {
+        servicio.cantidad = 0;
+        servicio.importe = 0;
+      } else {
+        // Allow dot as decimal separator, clean up extra dots
+        const cleanedValue = value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+        const parts = cleanedValue.split('.');
+        const finalValue = parts.length > 1 ? `${parts[0]}.${parts.slice(1).join('')}` : parts[0];
+        
+        const parsedValue = parseFloat(finalValue);
         if (!isNaN(parsedValue)) {
-            // @ts-ignore
-            newServicios[index][field] = parsedValue;
-
-            const novedadOriginal = novedades.find(n => n.id === newServicios[index].novedadId);
+            servicio.cantidad = parsedValue;
+            const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
             if (novedadOriginal) {
-                newServicios[index].importe = novedadOriginal.importe * parsedValue;
+                servicio.importe = novedadOriginal.importe * parsedValue;
             }
+        } else if (finalValue === '') {
+             servicio.cantidad = 0;
+             servicio.importe = 0;
         }
+      }
+      // @ts-ignore
+      newServicios[index] = servicio;
     }
     
     setServiciosAsignados(newServicios);
   }
 
-
   const handleSaveChanges = async () => {
     if (!selectedCliente) return;
     try {
       await updateCliente(selectedCliente.id, { serviciosAsignados: serviciosAsignados });
-       // After saving, we also need to update the local state of the clientes array
       const updatedClientes = clientes.map(c => 
         c.id === selectedCliente.id ? { ...c, serviciosAsignados: serviciosAsignados } : c
       );
@@ -204,7 +209,8 @@ export function AsignacionView() {
                               <TableCell>
                                 <Input 
                                   type="text"
-                                  value={servicio.cantidad.toString().replace('.',',')}
+                                  inputMode="decimal"
+                                  value={servicio.cantidad === 0 ? '' : servicio.cantidad.toString()}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
                                   className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
