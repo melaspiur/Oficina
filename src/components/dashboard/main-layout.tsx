@@ -34,6 +34,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
+import { FacturacionView } from './facturacion-view';
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -65,7 +66,7 @@ export function MainLayout() {
       case 'clientes-novedades':
         return <NovedadesView />;
       case 'facturacion':
-        return <PlaceholderView title="Facturación" />;
+        return <FacturacionView />;
       case 'informes':
         return <PlaceholderView title="Informes" />;
       case 'ajustes':
@@ -77,9 +78,11 @@ export function MainLayout() {
 
   const getHeaderTitle = () => {
     if (activeView.startsWith('clientes-')) {
-      return activeView.split('-')[1];
+      const title = activeView.split('-')[1];
+      return title.charAt(0).toUpperCase() + title.slice(1);
     }
-    return activeView;
+     const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
+     return viewName;
   }
 
   return (

@@ -10,15 +10,23 @@ export type Event = {
   description: string;
 };
 
+export type ServicioAsignado = {
+  novedadId: string;
+  nombre: string;
+  cantidad: number;
+  importe: number; // Importe personalizado para este cliente
+};
+
 export type Cliente = {
   codigo: number;
-  nombre: string;
+  nombre:string;
   domicilio?: string;
   localidad?: string;
   provincia?: string;
   cuit: string;
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
+  serviciosAsignados?: ServicioAsignado[];
 };
 
 export type ClienteWithId = Cliente & { id: string };
