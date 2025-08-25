@@ -74,6 +74,7 @@ export function ImportacionView() {
         if (line.includes('; ---------------------------')) {
             const nombreCliente = line.split(';')[0].trim();
             if (nombreCliente) {
+                // Find client by name, trimming and converting to upper case for better matching
                 currentCliente = clientesDb.find(c => c.nombre.trim().toUpperCase() === nombreCliente.toUpperCase()) || null;
                 if (!currentCliente) {
                     addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado en la base de datos. Se omitirán sus novedades.` });
@@ -108,16 +109,27 @@ export function ImportacionView() {
                     addLog({ type: 'success', message: `Asignación creada: Cliente "${currentCliente?.nombre}" -> Novedad "${novedad.nombre}" (Cant: ${cantidad}).` });
                     processedCount++;
                 }).catch((error) => {
-                    addLog({ type: 'error', message: `Error al asignar novedad ${novedad.nombre} a ${currentCliente?.nombre}: ${error.message}` });
+                    // Check for duplicate error message from service
+                    if (error.message.includes('ya ha sido asignada')) {
+                         addLog({ type: 'warning', message: `Asignación OMITIDA (duplicada): Cliente "${currentCliente?.nombre}" -> Novedad "${novedad.nombre}".` });
+                    } else {
+                        addLog({ type: 'error', message: `Error al asignar novedad ${novedad.nombre} a ${currentCliente?.nombre}: ${error.message}` });
+                    }
                 });
                 assignmentPromises.push(promise);
             }
         }
     }
 
-    await Promise.all(assignmentPromises);
+    try {
+        await Promise.all(assignmentPromises);
+    } catch(e) {
+        // This catch is for any unexpected promise rejection that wasn't handled inside the loop
+        console.error("Error during batch processing:", e);
+        addLog({ type: 'error', message: 'Ocurrió un error inesperado durante el procesamiento.' });
+    }
     
-    addLog({ type: 'info', message: `Proceso completado. Se procesaron ${processedCount} asignaciones.` });
+    addLog({ type: 'info', message: `Proceso completado. Se intentaron procesar ${assignmentPromises.length} asignaciones. Creadas con éxito: ${processedCount}.` });
     setIsProcessing(false)
   }
 
@@ -129,7 +141,7 @@ export function ImportacionView() {
           <CardDescription>
             Pegue el listado de texto para crear masivamente las asignaciones.
             El sistema buscará cada cliente por nombre y cada novedad por código para crear un nuevo registro de asignación.
-            Si una asignación para la misma novedad y cliente ya existe, se mostrará un error y se omitirá.
+            Si una asignación para la misma novedad y cliente ya existe, se mostrará un aviso y se omitirá.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -160,9 +172,11 @@ export function ImportacionView() {
           </CardHeader>
           <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
              {logs.map((log, index) => (
-                <Alert key={index} variant={log.type === 'error' ? 'destructive' : 'default'}>
+                <Alert key={index} variant={log.type === 'error' ? 'destructive' : 'default'} className={
+                    log.type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-800 [&>svg]:text-yellow-600' : ''
+                }>
                     {log.type === 'success' && <CheckCircle2 className="h-4 w-4" />}
-                    {(log.type === 'warning' || log.type === 'error') && <AlertCircle className="h-4 w-4" />}
+                    {(log.type === 'warning' || log.type === 'error' || log.type === 'info') && <AlertCircle className="h-4 w-4" />}
                     <AlertTitle className="capitalize">{log.type}</AlertTitle>
                     <AlertDescription>{log.message}</AlertDescription>
                 </Alert>
