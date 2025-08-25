@@ -87,21 +87,17 @@ export function AsignacionView() {
     const servicio = { ...newServicios[index] };
     
     if (field === 'cantidad') {
-      // Reemplaza la coma por un punto para el procesamiento interno
       const cleanedValue = value.replace(',', '.');
       const parsedValue = parseFloat(cleanedValue);
       
-      // Almacenamos el valor parseado si es válido, o el string si no (para permitir edición)
       (servicio as any)[field] = isNaN(parsedValue) ? value : parsedValue;
 
-      // Recalculamos el importe basado en la cantidad
       if (!isNaN(parsedValue)) {
         const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
         if (novedadOriginal) {
           servicio.importe = novedadOriginal.importe * parsedValue;
         }
       } else if (value === '' || cleanedValue === '') {
-        // Permitir vaciar el campo
         (servicio as any).cantidad = '';
       }
     }
@@ -113,7 +109,6 @@ export function AsignacionView() {
   const handleSaveChanges = () => {
     if (!selectedCliente) return;
 
-    // Validar y limpiar servicios antes de guardar
     const sanitizedServicios = serviciosAsignados.map(s => {
       const cantidad = parseFloat(String(s.cantidad).replace(',', '.'));
       return {
@@ -173,14 +168,16 @@ export function AsignacionView() {
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
               <Command>
+                <CommandInput placeholder="Buscar cliente por código o nombre..." />
                 <CommandList>
+                  <CommandEmpty>No se encontró el cliente.</CommandEmpty>
                   <CommandGroup>
                     {clientes.map((cliente) => (
                       <CommandItem
                         key={cliente.id}
-                        value={cliente.id}
-                        onSelect={(currentValue) => {
-                           handleClienteChange(currentValue);
+                        value={`${cliente.codigo} ${cliente.nombre}`}
+                        onSelect={() => {
+                           handleClienteChange(cliente.id);
                            setOpenCombobox(false);
                         }}
                       >
@@ -257,15 +254,17 @@ export function AsignacionView() {
                                   inputMode="decimal"
                                   value={
                                     focusedInputIndex === index
-                                      ? String(servicio.cantidad).replace('.', ',')
+                                      ? String(servicio.cantidad).replace(',', '.')
                                       : formatCurrency(servicio.cantidad)
                                   }
                                   onFocus={(e) => {
                                       setFocusedInputIndex(index)
                                       e.target.select()
                                   }}
-                                  onBlur={() => {
+                                  onBlur={(e) => {
                                       setFocusedInputIndex(null)
+                                      handleServicioChange(index, 'cantidad', e.target.value)
+                                      // Se guarda al perder foco
                                       handleSaveChanges()
                                   }}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
@@ -277,7 +276,7 @@ export function AsignacionView() {
                                   type="text"
                                   value={formatCurrency(servicio.importe)} 
                                   readOnly
-                                  className="h-8 bg-muted/50 border-none text-right"
+                                  className="h-8 bg-muted/50 border-none text-right focus-visible:ring-0 focus-visible:ring-offset-0"
                                 />
                               </TableCell>
                               <TableCell className="text-right">
