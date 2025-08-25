@@ -34,7 +34,9 @@ export function AsignacionView() {
       try {
         const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()])
         setClientes(clientesData)
-        setNovedades(novedadesData)
+        // Sort novedades by codigo
+        const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo)
+        setNovedades(sortedNovedades)
       } catch (error) {
         console.error("Error fetching data:", error)
         toast({ title: "Error", description: "No se pudieron cargar los datos.", variant: "destructive" })
@@ -137,7 +139,9 @@ export function AsignacionView() {
                         </SelectTrigger>
                         <SelectContent>
                             {novedades.map(n => (
-                                <SelectItem key={n.id} value={n.id}>{n.nombre}</SelectItem>
+                                <SelectItem key={n.id} value={n.id}>
+                                  {`${n.codigo} - ${n.nombre}`}
+                                </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
