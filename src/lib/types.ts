@@ -22,3 +22,27 @@ export type Cliente = {
 };
 
 export type ClienteWithId = Cliente & { id: string };
+
+export type Meses = {
+  enero: boolean;
+  febrero: boolean;
+  marzo: boolean;
+  abril: boolean;
+  mayo: boolean;
+  junio: boolean;
+  julio: boolean;
+  agosto: boolean;
+  septiembre: boolean;
+  octubre: boolean;
+  noviembre: boolean;
+  diciembre: boolean;
+};
+
+export type Novedad = {
+  codigo: number;
+  nombre: string;
+  meses: Meses;
+  importe: number;
+};
+
+export type NovedadWithId = Novedad & { id: string };

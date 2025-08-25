@@ -33,6 +33,7 @@ import { useRouter } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
+import { NovedadesView } from './novedades-view';
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -62,7 +63,7 @@ export function MainLayout() {
       case 'clientes-cliente':
         return <ClientesView />;
       case 'clientes-novedades':
-        return <PlaceholderView title="Novedades de Clientes" />;
+        return <NovedadesView />;
       case 'facturacion':
         return <PlaceholderView title="Facturación" />;
       case 'informes':
