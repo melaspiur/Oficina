@@ -82,7 +82,7 @@ export function AsignacionView() {
     setServiciosAsignados(newServicios);
   }
 
-  const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string) => {
+ const handleServicioChange = (index: number, field: keyof ServicioAsignado, value: string) => {
     const newServicios = [...serviciosAsignados];
     const servicio = { ...newServicios[index] };
     
@@ -95,26 +95,33 @@ export function AsignacionView() {
           if (novedadOriginal) {
               servicio.importe = novedadOriginal.importe * parsedValue;
           }
-      } else if (value === '') {
-          servicio.cantidad = 0;
-           const novedadOriginal = novedades.find(n => n.id === servicio.novedadId);
-           if (novedadOriginal) {
-              servicio.importe = novedadOriginal.importe * 0;
-           }
+      } else if (value === '' || cleanedValue === '') {
+          // Allow clearing the input
+          (servicio as any).cantidad = ''; // Temporarily store as empty string for editing
       }
     }
     newServicios[index] = servicio;
     setServiciosAsignados(newServicios);
   }
 
+
   const handleSaveChanges = async () => {
     if (!selectedCliente) return;
+
+    // Validate and clean servicios before saving
+    const sanitizedServicios = serviciosAsignados.map(s => ({
+        ...s,
+        cantidad: parseFloat(String(s.cantidad)) || 0,
+    }));
+
+
     try {
-      await updateCliente(selectedCliente.id, { serviciosAsignados: serviciosAsignados });
+      await updateCliente(selectedCliente.id, { serviciosAsignados: sanitizedServicios });
       const updatedClientes = clientes.map(c => 
-        c.id === selectedCliente.id ? { ...c, serviciosAsignados: serviciosAsignados } : c
+        c.id === selectedCliente.id ? { ...c, serviciosAsignados: sanitizedServicios } : c
       );
       setClientes(updatedClientes);
+      setServiciosAsignados(sanitizedServicios);
       toast({ title: "Cambios Guardados", description: "Los servicios asignados se actualizaron correctamente." });
     } catch (error) {
       console.error("Error saving changes:", error);
@@ -122,14 +129,15 @@ export function AsignacionView() {
     }
   }
 
-  const formatCurrency = (value: number) => {
-    if (typeof value !== 'number' || isNaN(value)) return '0,00';
+  const formatCurrency = (value: number | string) => {
+    const numValue = Number(value);
+    if (typeof numValue !== 'number' || isNaN(numValue)) return '0,00';
     return new Intl.NumberFormat('es-AR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value);
+    }).format(numValue);
   }
-  
+
   return (
     <div className="p-6 space-y-6">
       <Card>
@@ -164,13 +172,9 @@ export function AsignacionView() {
                         <CommandItem
                         key={cliente.id}
                         value={`${cliente.codigo} - ${cliente.nombre}`}
-                        onSelect={(currentValue) => {
-                           // Find the client that matches the selected value
-                            const clienteSeleccionado = clientes.find(c => `${c.codigo} - ${c.nombre}`.toLowerCase() === currentValue.toLowerCase());
-                            if (clienteSeleccionado) {
-                              handleClienteChange(clienteSeleccionado.id);
-                            }
-                            setOpenCombobox(false);
+                        onSelect={() => {
+                           handleClienteChange(cliente.id);
+                           setOpenCombobox(false);
                         }}
                         >
                         <Check
@@ -249,8 +253,14 @@ export function AsignacionView() {
                                       ? String(servicio.cantidad).replace('.', ',')
                                       : formatCurrency(servicio.cantidad)
                                   }
-                                  onFocus={() => setFocusedInputIndex(index)}
-                                  onBlur={() => setFocusedInputIndex(null)}
+                                  onFocus={(e) => {
+                                      setFocusedInputIndex(index)
+                                      e.target.select()
+                                  }}
+                                  onBlur={() => {
+                                      setFocusedInputIndex(null)
+                                      handleSaveChanges() 
+                                  }}
                                   onChange={(e) => handleServicioChange(index, 'cantidad', e.target.value)}
                                   className="h-8 text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
