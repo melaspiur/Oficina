@@ -61,6 +61,8 @@ export function AsignacionClienteView() {
     if (!selectedCliente) return;
     const clientesData = await getClientes();
     const updatedClient = clientesData.find(c => c.id === selectedCliente.id);
+    const sortedClientes = clientesData.sort((a, b) => a.codigo - b.codigo);
+    setClientes(sortedClientes);
     setSelectedCliente(updatedClient || null);
   }, [selectedCliente]);
 
@@ -124,16 +126,16 @@ export function AsignacionClienteView() {
   };
 
   const handleSaveEdit = async (nuevaCantidad: number) => {
-    if (!asignacionToEdit) return;
+    if (!asignacionToEdit || !selectedCliente) return;
 
-    const nuevosServiciosAsignados = (selectedCliente?.serviciosAsignados || []).map(servicio =>
+    const nuevosServiciosAsignados = (selectedCliente.serviciosAsignados || []).map(servicio =>
       servicio.novedadId === asignacionToEdit.novedadId
         ? { ...servicio, cantidad: nuevaCantidad }
         : servicio
     );
 
     try {
-      await updateCliente(asignacionToEdit.clienteId, { serviciosAsignados: nuevosServiciosAsignados });
+      await updateCliente(selectedCliente.id, { serviciosAsignados: nuevosServiciosAsignados });
       toast({ title: "Asignación Actualizada", description: "La cantidad se actualizó correctamente." });
       await refreshSelectedClientData();
     } catch (error) {
@@ -153,11 +155,11 @@ export function AsignacionClienteView() {
       }).format(value);
   };
 
-  const asignacionesDelCliente = React.useMemo(() => {
+  const getAsignacionesDelCliente = () => {
     if (!selectedCliente) return [];
-    return selectedCliente.serviciosAsignados?.map(servicio => {
+    return (selectedCliente.serviciosAsignados || []).map(servicio => {
         const novedad = novedades.find(n => n.id === servicio.novedadId);
-        if (!novedad) return null;
+        if (!novedad) return null; // Should not happen if data is consistent
         return {
             clienteId: selectedCliente.id,
             clienteCodigo: selectedCliente.codigo,
@@ -167,9 +169,11 @@ export function AsignacionClienteView() {
             novedadNombre: novedad.nombre,
             cantidad: servicio.cantidad,
             importe: novedad.importe * servicio.cantidad
-        }
-    }).filter(Boolean) as ServicioAsignado[] || [];
-  }, [selectedCliente, novedades]);
+        };
+    }).filter(Boolean) as ServicioAsignado[];
+  };
+
+  const asignacionesDelCliente = getAsignacionesDelCliente();
 
   return (
     <div className="p-6 space-y-6">
@@ -284,5 +288,4 @@ export function AsignacionClienteView() {
     </div>
   )
 }
-
     
