@@ -18,7 +18,6 @@ import type { ClienteWithId, NovedadWithId, ServicioAsignado } from "@/lib/types
 import { getClientes, updateCliente } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
 import { useToast } from "@/hooks/use-toast"
-import { Combobox } from "@/components/ui/combobox"
 
 export function AsignacionView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
@@ -149,12 +148,6 @@ export function AsignacionView() {
           maximumFractionDigits: 2,
       }).format(numValue);
   };
-  
-  const clienteOptions = React.useMemo(() => 
-    clientes.map(c => ({
-        value: c.id,
-        label: `${c.codigo} - ${c.nombre}`
-    })), [clientes]);
 
   return (
     <div className="p-6 space-y-6">
@@ -165,15 +158,22 @@ export function AsignacionView() {
         </CardHeader>
         <CardContent>
           <Label htmlFor="cliente-select">Cliente</Label>
-           <Combobox
-                options={clienteOptions}
-                value={selectedCliente?.id || ''}
-                onValueChange={handleClienteChange}
-                placeholder="Seleccione un cliente..."
-                searchPlaceholder="Buscar cliente..."
-                notFoundMessage="No se encontró el cliente."
-                disabled={isLoading}
-            />
+           <Select
+              onValueChange={handleClienteChange}
+              value={selectedCliente?.id || ""}
+              disabled={isLoading}
+            >
+              <SelectTrigger id="cliente-select">
+                <SelectValue placeholder="Seleccione un cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                {clientes.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {`${c.codigo} - ${c.nombre}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
         </CardContent>
       </Card>
 
