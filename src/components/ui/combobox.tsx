@@ -64,9 +64,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command filter={(value, search) => {
             const option = options.find(o => o.value === value);
             if (option && option.label.toLowerCase().includes(search.toLowerCase())) return 1
@@ -79,7 +77,7 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value} // Use value for selection
+                  value={option.value}
                   onSelect={(currentValue) => {
                     onValueChange(currentValue === value ? null : currentValue)
                     setOpen(false)
