@@ -12,7 +12,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
+  CommandList,
 } from "@/components/ui/command"
 import {
   Popover,
@@ -64,29 +64,18 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" >
-        <Command
-            filter={(value, search) => {
-                const option = options.find(o => o.value.toLowerCase() === value.toLowerCase());
-                if (option) {
-                    // Normalize search and label for better matching
-                    const normalizedSearch = search.trim().toLowerCase();
-                    const normalizedLabel = option.label.trim().toLowerCase();
-                    return normalizedLabel.includes(normalizedSearch) ? 1 : 0;
-                }
-                return 0;
-            }}
-        >
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+        <Command>
           <CommandInput placeholder={searchPlaceholder} />
-           <CommandList onMouseDown={(e) => e.preventDefault()}>
+          <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? null : currentValue)
+                  value={option.label}
+                  onSelect={() => {
+                    onValueChange(option.value === value ? null : option.value)
                     setOpen(false)
                   }}
                 >
