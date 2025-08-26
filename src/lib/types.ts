@@ -1,5 +1,6 @@
 
 
+
 export type Task = {
   id: string;
   text: string;
@@ -110,4 +111,17 @@ export type FacturacionResult = {
   ultimoNumeroFactura: number;
 };
 
+
+// Type for movements collection
+export type Movimiento = {
+    clienteId: string;
+    fecha: string; // ISO date string
+    comprobante: 'FC' | 'RE'; // FC=Factura, RE=Recibo
+    numero: number;
+    novedadId?: string; // Optional, as a receipt might not have a novedad
+    importe: number;
+    aplicacion: number;
+};
+
+export type MovimientoWithId = Movimiento & { id: string };
 

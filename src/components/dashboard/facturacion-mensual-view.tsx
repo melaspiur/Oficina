@@ -19,8 +19,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { generarFacturacion } from "@/ai/flows/generar-facturacion-flow"
-import { mesesList, FacturacionResult } from "@/lib/types"
+import { mesesList, type FacturacionResult, type Movimiento } from "@/lib/types"
 import { updateConfiguracionComprobantes } from "@/lib/services/configuracion"
+import { addMovimientosBatch } from "@/lib/services/movimientos"
 
 const formSchema = z.object({
   mes: z.string().min(1, "Debe seleccionar un mes."),
@@ -73,20 +74,43 @@ export function FacturacionMensualView() {
 
   const handleAceptarFacturacion = async () => {
     if (!facturacionResult || !facturacionResult.ultimoNumeroFactura) return;
+    
+    // 1. Prepare movements data
+    const movimientos: Movimiento[] = [];
+    facturacionResult.clientes.forEach(cliente => {
+        cliente.novedades.forEach(novedad => {
+            movimientos.push({
+                clienteId: cliente.clienteId,
+                fecha: facturacionResult.fechaFacturacion,
+                comprobante: 'FC',
+                numero: novedad.numeroFactura,
+                novedadId: novedad.novedadId,
+                importe: novedad.importe,
+                aplicacion: novedad.importe,
+            });
+        });
+    });
+
     try {
+        // 2. Save movements to the new collection
+        await addMovimientosBatch(movimientos);
+
+        // 3. Update the last invoice number in config
         await updateConfiguracionComprobantes({ ultimoFactura: facturacionResult.ultimoNumeroFactura });
-        console.log("Facturación aceptada:", facturacionResult);
+        
+        console.log("Facturación aceptada y movimientos creados:", facturacionResult);
         toast({
             title: "Proceso Completado",
-            description: "La facturación ha sido aceptada y el número de factura actualizado.",
+            description: "La facturación ha sido aceptada, los movimientos han sido registrados y el número de factura actualizado.",
         });
+        
         setFacturacionResult(null);
         form.reset();
     } catch (error) {
         console.error("Error al aceptar facturación:", error);
         toast({
             title: "Error",
-            description: "No se pudo actualizar la configuración de comprobantes.",
+            description: "No se pudo guardar la facturación en la base de datos.",
             variant: "destructive",
         });
     }
