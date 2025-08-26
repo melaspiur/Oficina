@@ -124,7 +124,7 @@ export function ComprobantesView() {
                     name="ultimoMesEventual"
                     control={control}
                     render={({ field }) => (
-                       <Input id="ultimoMesEventual" type="text" placeholder="Ej: enero-2024" {...field} />
+                       <Input id="ultimoMesEventual" type="text" placeholder="Ej: enero-2024" {...field} value={field.value ?? ''} />
                     )}
                   />
                   {errors.ultimoMesEventual && <p className="text-sm text-destructive">{errors.ultimoMesEventual.message}</p>}
