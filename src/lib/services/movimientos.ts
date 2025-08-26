@@ -96,6 +96,31 @@ export async function getMovimientosPorCliente(clienteId: string): Promise<Movim
     return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
 }
 
+/**
+ * Fetches all pending movements (invoices and receipts with a balance) for a specific client.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an object with pending invoices and receipts.
+ */
+export async function getMovimientosPendientesPorCliente(clienteId: string): Promise<{ facturas: MovimientoWithId[], recibos: MovimientoWithId[] }> {
+    if (!clienteId) {
+        return { facturas: [], recibos: [] };
+    }
+    const movimientosCliente = await getMovimientosPorCliente(clienteId);
+
+    const facturasPendientes = movimientosCliente
+        .filter(mov => mov.comprobante === 'FC' && mov.importe > mov.aplicacion)
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+    const recibosPendientes = movimientosCliente
+        .filter(mov => mov.comprobante === 'RE' && mov.importe > mov.aplicacion)
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+    return {
+        facturas: facturasPendientes,
+        recibos: recibosPendientes
+    };
+}
+
 
 /**
  * Fetches all 'FC' (Factura) movements for a specific client.

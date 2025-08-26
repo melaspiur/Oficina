@@ -51,6 +51,7 @@ import { ComprobantesView } from './comprobantes-view';
 import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
 import { InformeFacturacionClienteView } from './informe-facturacion-cliente-view';
 import { ModificarReciboView } from './modificar-recibo-view';
+import { AplicarReciboView } from './aplicar-recibo-view';
 
 
 // Vistas dinámicas
@@ -96,7 +97,7 @@ export function MainLayout() {
       case 'cobranzas-modificar-recibo':
         return <ModificarReciboView />;
       case 'cobranzas-aplicar-recibo':
-        return <PlaceholderView title="Aplicar Recibo" />;
+        return <AplicarReciboView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
       case 'informes-facturacion-mensual':
