@@ -80,6 +80,7 @@ export type AsignacionWithId = Asignacion & { id: string };
 export type ConfiguracionComprobantes = {
   ultimoRecibo: number;
   ultimoFactura: number;
+  ultimoMesEventual?: string;
 };
 
 
@@ -108,4 +109,5 @@ export type FacturacionResult = {
   totalGeneral: number;
   ultimoNumeroFactura: number;
 };
+
 

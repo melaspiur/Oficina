@@ -22,6 +22,7 @@ import type { ConfiguracionComprobantes } from "@/lib/types"
 const ComprobantesSchema = z.object({
   ultimoFactura: z.coerce.number().min(0, "El número no puede ser negativo."),
   ultimoRecibo: z.coerce.number().min(0, "El número no puede ser negativo."),
+  ultimoMesEventual: z.string().optional(),
 })
 
 export function ComprobantesView() {
@@ -34,6 +35,7 @@ export function ComprobantesView() {
     defaultValues: {
       ultimoFactura: 0,
       ultimoRecibo: 0,
+      ultimoMesEventual: "",
     },
   })
 
@@ -79,12 +81,11 @@ export function ComprobantesView() {
 
   return (
     <div className="p-6">
-      <Card className="max-w-2xl">
+      <Card className="max-w-4xl">
         <CardHeader>
           <CardTitle>Ajustes de Comprobantes</CardTitle>
           <CardDescription>
-            Gestiona la numeración de tus facturas y recibos. El sistema incrementará
-            automáticamente estos valores al emitir nuevos comprobantes.
+            Gestiona la numeración de tus facturas, recibos y el último mes facturado para facturas eventuales.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -94,7 +95,7 @@ export function ComprobantesView() {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="ultimoFactura">Último Número de Factura</Label>
                    <Controller
@@ -116,6 +117,17 @@ export function ComprobantesView() {
                     )}
                   />
                   {errors.ultimoRecibo && <p className="text-sm text-destructive">{errors.ultimoRecibo.message}</p>}
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="ultimoMesEventual">Último Mes Facturado (Eventual)</Label>
+                   <Controller
+                    name="ultimoMesEventual"
+                    control={control}
+                    render={({ field }) => (
+                       <Input id="ultimoMesEventual" type="text" placeholder="Ej: enero-2024" {...field} />
+                    )}
+                  />
+                  {errors.ultimoMesEventual && <p className="text-sm text-destructive">{errors.ultimoMesEventual.message}</p>}
                 </div>
               </div>
               <div className="flex justify-end">

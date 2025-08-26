@@ -9,15 +9,22 @@ export async function getConfiguracionComprobantes(): Promise<ConfiguracionCompr
     const docSnap = await getDoc(configuracionDocRef);
 
     if (docSnap.exists()) {
-        return docSnap.data() as ConfiguracionComprobantes;
+        const data = docSnap.data() as ConfiguracionComprobantes;
+        // Ensure default for new fields if they don't exist
+        return {
+            ultimoRecibo: 0,
+            ultimoFactura: 0,
+            ultimoMesEventual: "",
+            ...data
+        };
     } else {
         // If the document doesn't exist, create it with default values
-        const defaultConfig: ConfiguracionComprobantes = { ultimoRecibo: 0, ultimoFactura: 0 };
+        const defaultConfig: ConfiguracionComprobantes = { ultimoRecibo: 0, ultimoFactura: 0, ultimoMesEventual: "" };
         await setDoc(configuracionDocRef, defaultConfig);
         return defaultConfig;
     }
 }
 
 export async function updateConfiguracionComprobantes(data: Partial<ConfiguracionComprobantes>) {
-    await updateDoc(configuracionDocRef, data);
+    await setDoc(configuracionDocRef, data, { merge: true });
 }
