@@ -136,6 +136,8 @@ export function ClientesView() {
               <TableHead>Código</TableHead>
               <TableHead>Nombre</TableHead>
               <TableHead>CUIT</TableHead>
+              <TableHead>Mail</TableHead>
+              <TableHead>Celular</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Categoría</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
@@ -144,11 +146,11 @@ export function ClientesView() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Cargando clientes...</TableCell>
+                <TableCell colSpan={8} className="text-center">Cargando clientes...</TableCell>
               </TableRow>
             ) : clientes.length === 0 ? (
                <TableRow>
-                 <TableCell colSpan={6} className="text-center">No hay clientes para mostrar. Agregue uno para comenzar.</TableCell>
+                 <TableCell colSpan={8} className="text-center">No hay clientes para mostrar. Agregue uno para comenzar.</TableCell>
               </TableRow>
             ) : (
               clientes.map((cliente) => (
@@ -156,6 +158,8 @@ export function ClientesView() {
                   <TableCell>{cliente.codigo}</TableCell>
                   <TableCell className="font-medium">{cliente.nombre}</TableCell>
                   <TableCell>{cliente.cuit}</TableCell>
+                  <TableCell>{cliente.mail}</TableCell>
+                  <TableCell>{cliente.celular}</TableCell>
                   <TableCell>
                     <Badge variant={cliente.tipo === 'inscripto' ? "secondary" : "default"}>
                       {cliente.tipo}

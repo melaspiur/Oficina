@@ -1,8 +1,4 @@
 
-
-
-
-
 export type Task = {
   id: string;
   text: string;
@@ -37,6 +33,8 @@ export type Cliente = {
   cuit: string;
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
+  mail?: string;
+  celular?: string;
 };
 
 export type ClienteWithId = Cliente & { id: string };

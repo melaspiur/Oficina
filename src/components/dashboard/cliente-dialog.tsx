@@ -34,6 +34,8 @@ const clienteSchema = z.object({
   cuit: z.string().min(1, "El CUIT es requerido"),
   tipo: z.enum(["inscripto", "monotributo"]),
   categoria: z.coerce.number().min(1).max(5),
+  mail: z.string().email("El mail no es válido.").optional().or(z.literal('')),
+  celular: z.string().optional(),
 });
 
 
@@ -47,6 +49,8 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
       provincia: "",
       tipo: "inscripto",
       categoria: 1,
+      mail: "",
+      celular: "",
     }
   });
 
@@ -61,6 +65,8 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
             cuit: "",
             tipo: "inscripto",
             categoria: 1,
+            mail: "",
+            celular: "",
       });
     }
   }, [isOpen, cliente, reset]);
@@ -106,6 +112,15 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
                 <Label htmlFor="cuit">CUIT *</Label>
                 <Input id="cuit" {...register("cuit")} />
                 {errors.cuit && <p className="text-sm text-destructive mt-1">{errors.cuit.message}</p>}
+              </div>
+               <div>
+                <Label htmlFor="mail">Mail</Label>
+                <Input id="mail" type="email" {...register("mail")} />
+                {errors.mail && <p className="text-sm text-destructive mt-1">{errors.mail.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="celular">Celular</Label>
+                <Input id="celular" {...register("celular")} />
               </div>
               <div>
                 <Label htmlFor="tipo">Tipo *</Label>
