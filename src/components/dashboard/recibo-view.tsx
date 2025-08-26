@@ -184,7 +184,6 @@ export function ReciboView() {
             fecha: fechaRecibo.toISOString(),
             comprobante: 'RE',
             numero: nuevoNumeroRecibo,
-            novedadId: undefined, // Recibos no tienen novedad asociada
             importe: data.importe,
             aplicacion: 0, // Initially unapplied
             descripcion: data.descripcion || 'Recibo de pago',
