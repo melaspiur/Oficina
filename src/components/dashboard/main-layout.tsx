@@ -36,6 +36,8 @@ import {
   DollarSign,
   BookUser,
   CalendarClock,
+  Landmark,
+  Wallet,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -93,10 +95,12 @@ export function MainLayout() {
         return <ImportacionView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
-      case 'informes-mensual':
-        return <PlaceholderView title="Informe de Facturación Mensual" />;
-      case 'informes-cliente':
-        return <PlaceholderView title="Informe de Facturación por Cliente" />;
+      case 'informes-facturacion':
+        return <PlaceholderView title="Informe de Facturación" />;
+      case 'informes-cobranzas':
+        return <PlaceholderView title="Informe de Cobranzas" />;
+      case 'informes-cuenta-corriente':
+        return <PlaceholderView title="Informe de Cuenta Corriente" />;
       default:
         return <ClientesView />;
     }
@@ -119,9 +123,9 @@ export function MainLayout() {
         if (activeView === 'ajustes-comprobantes') return "Comprobantes";
      }
       if (activeView.startsWith('informes-')) {
-        const title = activeView.split('-')[1];
-        if (activeView === 'informes-mensual') return "Informe Mensual";
-        if (activeView === 'informes-cliente') return "Informe por Cliente";
+        if (activeView === 'informes-facturacion') return "Informe de Facturación";
+        if (activeView === 'informes-cobranzas') return "Informe de Cobranzas";
+        if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
      }
      if (activeView === 'cobranza') {
       return "Cobranza";
@@ -255,18 +259,26 @@ export function MainLayout() {
                 <SidebarMenuSub>
                     <SidebarMenuSubItem>
                         <SidebarMenuSubButton 
-                        onClick={() => setActiveView('informes-mensual')} 
-                        isActive={activeView === 'informes-mensual'}>
-                        <CalendarClock />
-                        <span>Informe Mensual</span>
+                        onClick={() => setActiveView('informes-facturacion')} 
+                        isActive={activeView === 'informes-facturacion'}>
+                        <FileText />
+                        <span>Facturación</span>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                     <SidebarMenuSubItem>
                         <SidebarMenuSubButton 
-                        onClick={() => setActiveView('informes-cliente')} 
-                        isActive={activeView === 'informes-cliente'}>
-                        <BookUser />
-                        <span>Informe por Cliente</span>
+                        onClick={() => setActiveView('informes-cobranzas')} 
+                        isActive={activeView === 'informes-cobranzas'}>
+                        <Wallet />
+                        <span>Cobranzas</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                     <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('informes-cuenta-corriente')} 
+                        isActive={activeView === 'informes-cuenta-corriente'}>
+                        <Landmark />
+                        <span>Cuenta Corriente</span>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                 </SidebarMenuSub>
@@ -333,3 +345,5 @@ export function MainLayout() {
     </SidebarProvider>
   );
 }
+
+    
