@@ -5,7 +5,8 @@ import * as React from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2 } from "lucide-react"
+import { Loader2, CalendarIcon } from "lucide-react"
+import { format as formatDate } from "date-fns"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Combobox } from "@/components/ui/combobox"
 import { useToast } from "@/hooks/use-toast"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
 
 import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
@@ -23,10 +27,10 @@ import type { ClienteWithId, NovedadWithId, ConfiguracionComprobantes, Movimient
 
 // Helper to parse dd/mm/yyyy string to Date
 const parseDate = (dateStr: string): Date | undefined => {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return undefined;
   const [day, month, year] = dateStr.split('/').map(Number);
-  if (!day || !month || !year || String(year).length < 4) return undefined;
+  if (!day || !month || !year) return undefined;
   const date = new Date(year, month - 1, day);
-  // Check if the parsed date is valid
   if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
     return date;
   }
@@ -75,7 +79,7 @@ export function FacturacionEventualView() {
         setClientes(clientesData.sort((a,b) => a.codigo - b.codigo));
         
         // Remove duplicates from novedades
-        const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.id, item])).values());
+        const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.codigo, item])).values());
         setNovedades(uniqueNovedades.sort((a,b) => a.codigo - b.codigo));
 
         setConfig(configData);
@@ -207,13 +211,35 @@ export function FacturacionEventualView() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Fecha de Facturación *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="dd/mm/yyyy" 
-                            {...field}
-                            onChange={handleDateChange}
-                          />
-                        </FormControl>
+                        <div className="relative">
+                            <FormControl>
+                            <Input 
+                                placeholder="dd/mm/yyyy" 
+                                value={field.value}
+                                onChange={handleDateChange}
+                            />
+                            </FormControl>
+                            <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground">
+                                <CalendarIcon className="h-4 w-4" />
+                                <span className="sr-only">Abrir calendario</span>
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={parseDate(field.value)}
+                                    onSelect={(date) => {
+                                        if (date) {
+                                            field.onChange(formatDate(date, "dd/MM/yyyy"))
+                                        }
+                                    }}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                            </Popover>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
