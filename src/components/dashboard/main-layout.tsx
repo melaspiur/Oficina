@@ -53,6 +53,7 @@ import { AsignacionClienteView } from './asignacion-cliente-view';
 import { ImportacionView } from './importacion-view';
 import { ComprobantesView } from './comprobantes-view';
 import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
+import { InformeFacturacionClienteView } from './informe-facturacion-cliente-view';
 
 
 // Vistas dinámicas
@@ -103,7 +104,7 @@ export function MainLayout() {
       case 'informes-facturacion-mensual':
         return <InformeFacturacionMensualView />;
       case 'informes-facturacion-cliente':
-        return <PlaceholderView title="Informe de Facturación por Cliente" />;
+        return <InformeFacturacionClienteView />;
       case 'informes-cobranzas':
         return <PlaceholderView title="Informe de Cobranzas" />;
       case 'informes-cuenta-corriente':
@@ -380,5 +381,3 @@ export function MainLayout() {
     </SidebarProvider>
   );
 }
-
-    

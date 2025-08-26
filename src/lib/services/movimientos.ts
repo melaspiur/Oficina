@@ -54,3 +54,22 @@ export async function getMovimientosFacturasPorMes(year: number, month: number):
   return filteredFacturas;
 }
 
+/**
+ * Fetches all 'FC' (Factura) movements for a specific client.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an array of MovimientoWithId.
+ */
+export async function getMovimientosFacturasPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+  if (!clienteId) return [];
+
+  const q = query(
+    movimientosCollection,
+    where("comprobante", "==", "FC"),
+    where("clienteId", "==", clienteId)
+  );
+  
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
+}
+
