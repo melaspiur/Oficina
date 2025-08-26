@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import type { Movimiento, MovimientoWithId } from "@/lib/types";
-import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc } from "firebase/firestore";
+import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc, increment } from "firebase/firestore";
 
 const movimientosCollection = collection(db, "movimientos");
 
@@ -108,11 +108,11 @@ export async function getMovimientosPendientesPorCliente(clienteId: string): Pro
     const movimientosCliente = await getMovimientosPorCliente(clienteId);
 
     const facturasPendientes = movimientosCliente
-        .filter(mov => mov.comprobante === 'FC' && mov.importe > mov.aplicacion)
+        .filter(mov => mov.comprobante === 'FC' && (mov.importe - mov.aplicacion) > 0.001) // Check for a positive balance with a tolerance
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
     const recibosPendientes = movimientosCliente
-        .filter(mov => mov.comprobante === 'RE' && mov.importe > mov.aplicacion)
+        .filter(mov => mov.comprobante === 'RE' && (mov.importe - mov.aplicacion) > 0.001) // Check for a positive balance with a tolerance
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
     return {
