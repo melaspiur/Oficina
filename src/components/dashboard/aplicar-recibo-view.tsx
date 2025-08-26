@@ -65,11 +65,10 @@ export function AplicarReciboView() {
     setFacturas([]);
     setSelectedRecibos(new Set());
     setSelectedFacturas(new Set());
-
+    
     if (!clienteId) {
-        const cliente = allClientes.find(c => c.id === clienteId);
-        setSelectedCliente(cliente || null);
-        return;
+      setSelectedCliente(null);
+      return;
     }
     
     const cliente = allClientes.find(c => c.id === clienteId);
