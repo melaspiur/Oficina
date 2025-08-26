@@ -1,4 +1,5 @@
 
+
 export type Task = {
   id: string;
   text: string;
@@ -74,3 +75,9 @@ export type Asignacion = {
 }
 
 export type AsignacionWithId = Asignacion & { id: string };
+
+
+export type ConfiguracionComprobantes = {
+  ultimoRecibo: number;
+  ultimoFactura: number;
+};

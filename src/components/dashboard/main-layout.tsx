@@ -32,6 +32,7 @@ import {
   Upload,
   UserCheck,
   FileClock,
+  FileKey,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -43,6 +44,7 @@ import { FacturacionMensualView } from './facturacion-mensual-view';
 import { AsignacionIndividualView } from './asignacion-individual-view';
 import { AsignacionClienteView } from './asignacion-cliente-view';
 import { ImportacionView } from './importacion-view';
+import { ComprobantesView } from './comprobantes-view';
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -56,6 +58,7 @@ export function MainLayout() {
   const [activeView, setActiveView] = React.useState('clientes-cliente');
   const [isClientesOpen, setIsClientesOpen] = React.useState(true);
   const [isFacturacionOpen, setIsFacturacionOpen] = React.useState(false);
+  const [isAjustesOpen, setIsAjustesOpen] = React.useState(false);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -84,10 +87,10 @@ export function MainLayout() {
         return <PlaceholderView title="Factura Eventual" />;
       case 'importacion':
         return <ImportacionView />;
+      case 'ajustes-comprobantes':
+        return <ComprobantesView />;
       case 'informes':
         return <PlaceholderView title="Informes" />;
-      case 'ajustes':
-        return <PlaceholderView title="Ajustes" />;
       default:
         return <ClientesView />;
     }
@@ -104,6 +107,10 @@ export function MainLayout() {
         const title = activeView.split('-')[1];
         if (activeView === 'facturacion-mensual') return "Factura Mensual";
         if (activeView === 'facturacion-eventual') return "Factura Eventual";
+     }
+      if (activeView.startsWith('ajustes-')) {
+        const title = activeView.split('-')[1];
+        if (activeView === 'ajustes-comprobantes') return "Comprobantes";
      }
      if (activeView === 'importacion') {
       return "Importación y Asignación Masiva";
@@ -226,10 +233,31 @@ export function MainLayout() {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('ajustes')} isActive={activeView === 'ajustes'} tooltip="Ajustes">
-                <Settings />
-                <span>Ajustes</span>
+                <SidebarMenuButton
+                    onClick={() => setIsAjustesOpen(!isAjustesOpen)}
+                    isActive={activeView.startsWith('ajustes-')}
+                    tooltip="Ajustes"
+                >
+                    <Settings />
+                    <span>Ajustes</span>
+                    <ChevronDown
+                    className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                        isAjustesOpen ? 'rotate-180' : ''
+                    }`}
+                    />
               </SidebarMenuButton>
+               {isAjustesOpen && (
+                <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('ajustes-comprobantes')} 
+                        isActive={activeView === 'ajustes-comprobantes'}>
+                        <FileKey />
+                        <span>Comprobantes</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
