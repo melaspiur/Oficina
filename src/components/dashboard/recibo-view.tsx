@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -21,9 +20,12 @@ import { cn } from "@/lib/utils"
 
 import { getClientes } from "@/lib/services/clientes"
 import { getConfiguracionComprobantes, updateConfiguracionComprobantes } from "@/lib/services/configuracion"
-import { addMovimiento } from "@/lib/services/movimientos"
+import { addMovimiento, getMovimientosPorCliente } from "@/lib/services/movimientos"
+import { addAplicacionesBatch } from "@/lib/services/aplicaciones"
+import { AplicacionReciboDialog } from "./aplicacion-recibo-dialog"
 
-import type { ClienteWithId, ConfiguracionComprobantes, Movimiento } from "@/lib/types"
+
+import type { ClienteWithId, ConfiguracionComprobantes, Movimiento, MovimientoWithId, FacturaConSaldo, Aplicacion } from "@/lib/types"
 
 // Helper to parse dd/mm/yyyy string to Date
 const parseDate = (dateStr: string): Date | undefined => {
@@ -63,6 +65,13 @@ export function ReciboView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
   const [config, setConfig] = React.useState<ConfiguracionComprobantes | null>(null)
   const [displayImporte, setDisplayImporte] = React.useState("0,00");
+  const [isAplicacionDialogOpen, setIsAplicacionDialogOpen] = React.useState(false);
+  const [datosParaAplicacion, setDatosParaAplicacion] = React.useState<{
+      cliente: ClienteWithId,
+      recibo: MovimientoWithId,
+      facturasPendientes: FacturaConSaldo[]
+  } | null>(null);
+
 
   const { toast } = useToast()
 
@@ -126,6 +135,26 @@ export function ReciboView() {
     }
   };
 
+  const calculateSaldos = (movimientos: MovimientoWithId[]): FacturaConSaldo[] => {
+      const facturas = new Map<string, FacturaConSaldo>();
+
+      // Initialize facturas
+      movimientos.filter(m => m.comprobante === 'FC').forEach(fc => {
+          facturas.set(fc.id, {
+              ...fc,
+              saldo: fc.importe
+          });
+      });
+      
+      // Calculate payments made from 'aplicaciones' collection later if needed
+      // For now, we assume saldo is full importe
+      // This will be more complex when we have applications.
+
+      return Array.from(facturas.values())
+        .filter(f => f.saldo > 0)
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+  }
+
 
   const onSubmit = async (data: FormSchema) => {
     if (!config) {
@@ -136,6 +165,12 @@ export function ReciboView() {
     const fechaRecibo = parseDate(data.fecha);
     if (!fechaRecibo) {
          toast({ title: "Error", description: "La fecha ingresada no es válida.", variant: "destructive" });
+        return;
+    }
+
+    const clienteSeleccionado = clientes.find(c => c.id === data.clienteId);
+    if (!clienteSeleccionado) {
+        toast({ title: "Error", description: "Cliente no encontrado.", variant: "destructive" });
         return;
     }
 
@@ -151,30 +186,35 @@ export function ReciboView() {
             numero: nuevoNumeroRecibo,
             novedadId: undefined, // Recibos no tienen novedad asociada
             importe: data.importe,
-            aplicacion: data.importe,
+            aplicacion: 0, // Initially unapplied
             descripcion: data.descripcion || 'Recibo de pago',
         };
 
-        // 1. Guardar el nuevo movimiento
-        await addMovimiento(movimiento);
-
+        // 1. Guardar el nuevo movimiento de recibo
+        const nuevoReciboId = await addMovimiento(movimiento);
+        const nuevoRecibo: MovimientoWithId = { ...movimiento, id: nuevoReciboId };
+        
+        toast({
+            title: "Recibo Creado",
+            description: `Se generó el recibo N° ${String(nuevoNumeroRecibo).padStart(8,'0')}. Ahora, aplícalo a las facturas.`,
+        });
+        
         // 2. Actualizar la configuración con el nuevo número de recibo
         const newConfig = { ...config, ultimoRecibo: nuevoNumeroRecibo };
         await updateConfiguracionComprobantes(newConfig);
-        
-        // 3. Actualizar el estado local y notificar
         setConfig(newConfig);
-        toast({
-            title: "Recibo Creado",
-            description: `Se generó el recibo N° ${String(nuevoNumeroRecibo).padStart(8,'0')} correctamente.`,
+
+        // 3. Preparar y abrir el diálogo de aplicación
+        const movimientosCliente = await getMovimientosPorCliente(data.clienteId);
+        const facturasPendientes = calculateSaldos(movimientosCliente);
+        
+        setDatosParaAplicacion({
+            cliente: clienteSeleccionado,
+            recibo: nuevoRecibo,
+            facturasPendientes: facturasPendientes
         });
-        form.reset({
-            importe: 0,
-            descripcion: "",
-            clienteId: undefined,
-            fecha: "",
-        });
-        setDisplayImporte("0,00");
+
+        setIsAplicacionDialogOpen(true);
 
     } catch (error) {
       console.error("Error al generar recibo:", error)
@@ -187,6 +227,38 @@ export function ReciboView() {
       setIsProcessing(false)
     }
   }
+
+  const handleCloseAplicacionDialog = () => {
+    setIsAplicacionDialogOpen(false);
+    setDatosParaAplicacion(null);
+    form.reset({
+        importe: 0,
+        descripcion: "",
+        clienteId: undefined,
+        fecha: "",
+    });
+    setDisplayImporte("0,00");
+  }
+
+  const handleSaveAplicacion = async (aplicaciones: Aplicacion[]) => {
+      if (!datosParaAplicacion) return;
+      
+      try {
+          await addAplicacionesBatch(aplicaciones);
+          toast({
+              title: "Recibo Aplicado",
+              description: "El recibo ha sido aplicado a las facturas seleccionadas.",
+          });
+          handleCloseAplicacionDialog();
+      } catch (error) {
+          console.error("Error saving aplicacion:", error);
+          toast({
+              title: "Error",
+              description: "No se pudo guardar la aplicación del recibo.",
+              variant: "destructive",
+          });
+      }
+  };
   
   return (
     <div className="space-y-6 pt-6">
@@ -317,6 +389,17 @@ export function ReciboView() {
           </Form>
         </CardContent>
       </Card>
+
+      {datosParaAplicacion && (
+        <AplicacionReciboDialog
+            isOpen={isAplicacionDialogOpen}
+            onOpenChange={handleCloseAplicacionDialog}
+            onSave={handleSaveAplicacion}
+            cliente={datosParaAplicacion.cliente}
+            recibo={datosParaAplicacion.recibo}
+            facturas={datosParaAplicacion.facturasPendientes}
+        />
+      )}
     </div>
   )
 }

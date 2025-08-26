@@ -8,12 +8,14 @@ const movimientosCollection = collection(db, "movimientos");
 /**
  * Adds a single movement document to the 'movimientos' collection.
  * @param movimiento The Movimiento object to add.
+ * @returns The ID of the newly created document.
  */
-export async function addMovimiento(movimiento: Movimiento) {
+export async function addMovimiento(movimiento: Movimiento): Promise<string> {
     if (!movimiento) {
         throw new Error("Movimiento data is required.");
     }
-    await addDoc(movimientosCollection, movimiento);
+    const docRef = await addDoc(movimientosCollection, movimiento);
+    return docRef.id;
 }
 
 
@@ -67,6 +69,25 @@ export async function getMovimientosFacturasPorMes(year: number, month: number):
 }
 
 /**
+ * Fetches all movements for a specific client.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an array of all movements for the client.
+ */
+export async function getMovimientosPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+    if (!clienteId) return [];
+
+    const q = query(
+        movimientosCollection,
+        where("clienteId", "==", clienteId)
+    );
+    
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
+}
+
+
+/**
  * Fetches all 'FC' (Factura) movements for a specific client.
  * @param clienteId The ID of the client.
  * @returns A promise that resolves to an array of MovimientoWithId.
@@ -103,5 +124,3 @@ export async function getMovimientosRecibosPorCliente(clienteId: string): Promis
 
   return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
 }
-
-    

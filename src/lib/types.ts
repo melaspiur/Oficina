@@ -1,4 +1,5 @@
 
+
 export type Task = {
   id: string;
   text: string;
@@ -126,3 +127,18 @@ export type Movimiento = {
 };
 
 export type MovimientoWithId = Movimiento & { id: string };
+
+// Type for receipt application
+export type FacturaConSaldo = MovimientoWithId & {
+    saldo: number;
+};
+
+export type Aplicacion = {
+    reciboId: string;
+    facturaId: string;
+    clienteId: string;
+    fecha: string; // ISO date string
+    importe: number;
+};
+
+export type AplicacionWithId = Aplicacion & { id: string };
