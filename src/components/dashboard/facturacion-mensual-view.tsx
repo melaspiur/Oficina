@@ -18,8 +18,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { generarFacturacion, GenerarFacturacionOutput } from "@/ai/flows/generar-facturacion-flow"
-import { mesesList, FacturacionResult, NovedadFacturada } from "@/lib/types"
+import { generarFacturacion } from "@/ai/flows/generar-facturacion-flow"
+import { mesesList, FacturacionResult } from "@/lib/types"
 import { updateConfiguracionComprobantes } from "@/lib/services/configuracion"
 
 const formSchema = z.object({
@@ -72,7 +72,7 @@ export function FacturacionMensualView() {
   }
 
   const handleAceptarFacturacion = async () => {
-    if (!facturacionResult) return;
+    if (!facturacionResult || !facturacionResult.ultimoNumeroFactura) return;
     try {
         await updateConfiguracionComprobantes({ ultimoFactura: facturacionResult.ultimoNumeroFactura });
         console.log("Facturación aceptada:", facturacionResult);
@@ -133,8 +133,7 @@ export function FacturacionMensualView() {
                                 <React.Fragment key={cliente.clienteId}>
                                     <TableRow className="bg-secondary hover:bg-secondary pointer-events-none">
                                         <TableCell className="font-bold">{cliente.clienteCodigo}</TableCell>
-                                        <TableCell className="font-bold">{cliente.clienteNombre}</TableCell>
-                                        <TableCell colSpan={2}></TableCell>
+                                        <TableCell colSpan={3} className="font-bold">{cliente.clienteNombre}</TableCell>
                                         <TableCell className="text-right font-bold">{formatCurrency(cliente.totalFacturado)}</TableCell>
                                         <TableCell></TableCell>
                                     </TableRow>
