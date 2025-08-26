@@ -40,6 +40,7 @@ import {
   Wallet,
   Calendar,
   Contact,
+  ClipboardSignature,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -48,8 +49,7 @@ import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionMensualView } from './facturacion-mensual-view';
-import { AsignacionIndividualView } from './asignacion-individual-view';
-import { AsignacionClienteView } from './asignacion-cliente-view';
+import { AsignacionView } from './asignacion-view';
 import { ImportacionView } from './importacion-view';
 import { ComprobantesView } from './comprobantes-view';
 import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
@@ -89,10 +89,8 @@ export function MainLayout() {
         return <ClientesView />;
       case 'clientes-novedades':
         return <NovedadesView />;
-      case 'clientes-asignacion-individual':
-        return <AsignacionIndividualView />;
-       case 'clientes-asignacion-cliente':
-        return <AsignacionClienteView />;
+      case 'clientes-asignaciones':
+        return <AsignacionView />;
       case 'facturacion-mensual':
         return <FacturacionMensualView />;
       case 'facturacion-eventual':
@@ -117,8 +115,7 @@ export function MainLayout() {
   const getHeaderTitle = () => {
     if (activeView.startsWith('clientes-')) {
       const title = activeView.split('-')[1];
-      if (activeView === 'clientes-asignacion-individual') return "Asignación Individual";
-      if (activeView === 'clientes-asignacion-cliente') return "Asignación por Cliente";
+       if (activeView === 'clientes-asignaciones') return "Asignaciones";
       return title.charAt(0).toUpperCase() + title.slice(1);
     }
      if (activeView.startsWith('facturacion-')) {
@@ -192,18 +189,10 @@ export function MainLayout() {
                   </SidebarMenuSubItem>
                    <SidebarMenuSubItem>
                     <SidebarMenuSubButton 
-                      onClick={() => setActiveView('clientes-asignacion-individual')} 
-                      isActive={activeView === 'clientes-asignacion-individual'}>
-                      <ClipboardList />
-                      <span>Asig. Individual</span>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                  <SidebarMenuSubItem>
-                    <SidebarMenuSubButton 
-                      onClick={() => setActiveView('clientes-asignacion-cliente')} 
-                      isActive={activeView === 'clientes-asignacion-cliente'}>
-                      <UserCheck />
-                      <span>Asig. por Cliente</span>
+                      onClick={() => setActiveView('clientes-asignaciones')} 
+                      isActive={activeView === 'clientes-asignaciones'}>
+                      <ClipboardSignature />
+                      <span>Asignaciones</span>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>

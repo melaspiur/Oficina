@@ -8,7 +8,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +19,8 @@ import { getNovedades } from "@/lib/services/novedades"
 import { getAsignacionesByClienteId, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
+import { Combobox } from "@/components/ui/combobox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function AsignacionClienteView() {
   // Global data
@@ -41,13 +42,20 @@ export function AsignacionClienteView() {
   const [asignacionToEdit, setAsignacionToEdit] = React.useState<AsignacionViewModel | null>(null);
   const { toast } = useToast()
 
+  const clienteOptions = React.useMemo(() => {
+    return clientes
+      .sort((a, b) => a.codigo - b.codigo)
+      .map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }));
+  }, [clientes]);
+
+
   // Initial data fetch for clients and novedades
   React.useEffect(() => {
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
             const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
-            setClientes(clientesData.sort((a, b) => a.codigo - b.codigo));
+            setClientes(clientesData);
             setNovedades(novedadesData.sort((a, b) => a.codigo - b.codigo));
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -94,7 +102,12 @@ export function AsignacionClienteView() {
       }
   }, [clientes, novedades, toast]);
 
-  const handleSelectCliente = (clienteId: string) => {
+  const handleSelectCliente = (clienteId: string | null) => {
+    if (clienteId === null) {
+      setSelectedCliente(null);
+      setAsignacionesCliente([]);
+      return;
+    }
     const cliente = clientes.find(c => c.id === clienteId);
     setSelectedCliente(cliente || null);
     setAsignacionesCliente([]); // Clear previous assignments
@@ -170,7 +183,7 @@ export function AsignacionClienteView() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 pt-6">
       <Card>
         <CardHeader>
             <CardTitle>Seleccionar Cliente</CardTitle>
@@ -179,12 +192,15 @@ export function AsignacionClienteView() {
         <CardContent>
             <div className="max-w-md">
                 <Label htmlFor="cliente-select">Cliente</Label>
-                <Select onValueChange={handleSelectCliente} disabled={isLoading}>
-                    <SelectTrigger id="cliente-select"><SelectValue placeholder="Seleccione un cliente..." /></SelectTrigger>
-                    <SelectContent>
-                        {clientes.map(c => <SelectItem key={c.id} value={c.id}>{`${c.codigo} - ${c.nombre}`}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                 <Combobox 
+                    options={clienteOptions}
+                    value={selectedCliente?.id || null}
+                    onValueChange={handleSelectCliente}
+                    placeholder="Seleccione un cliente..."
+                    searchPlaceholder="Buscar cliente..."
+                    notFoundMessage="No se encontraron clientes."
+                    disabled={isLoading}
+                />
             </div>
         </CardContent>
       </Card>

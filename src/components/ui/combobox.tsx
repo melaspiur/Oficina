@@ -65,15 +65,17 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" >
-        <Command filter={(value, search) => {
-            const option = options.find(o => o.value === value);
-            if (option) {
-                return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-            }
-            return 0;
-        }}>
+        <Command
+            filter={(value, search) => {
+                const option = options.find(o => o.value.toLowerCase() === value.toLowerCase());
+                if (option) {
+                    return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                }
+                return 0;
+            }}
+        >
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList onMouseDown={(e) => e.preventDefault()}>
+           <CommandList onMouseDown={(e) => e.preventDefault()}>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
