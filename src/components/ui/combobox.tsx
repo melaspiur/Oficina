@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -65,7 +64,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command onMouseDown={(e) => e.preventDefault()}>
+        <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
@@ -77,6 +76,10 @@ export function Combobox({
                   onSelect={() => {
                     onValueChange(option.value === value ? null : option.value)
                     setOpen(false)
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                   }}
                 >
                   <Check
