@@ -66,7 +66,10 @@ export function Combobox({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <Command>
+        <Command filter={(value, search) => {
+            if (value.toLowerCase().includes(search.toLowerCase())) return 1
+            return 0
+          }}>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
@@ -74,9 +77,9 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? null : currentValue)
+                  value={option.label} // Use label for filtering
+                  onSelect={() => {
+                    onValueChange(option.value === value ? null : option.value)
                     setOpen(false)
                   }}
                 >
