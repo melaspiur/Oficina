@@ -34,26 +34,23 @@ export async function addMovimientosBatch(movimientos: Movimiento[]) {
  */
 export async function getMovimientosFacturasPorMes(year: number, month: number): Promise<MovimientoWithId[]> {
   const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+  const endDate = new Date(year, month, 1); // First day of next month
 
-  const startTimestamp = Timestamp.fromDate(startDate);
-  const endTimestamp = Timestamp.fromDate(endDate);
-  
   const q = query(
     movimientosCollection,
-    where("comprobante", "==", "FC"),
-    // Firestore requires dates to be stored as Timestamps for range queries to work reliably.
-    // We assume the `fecha` field is an ISO string and convert it on the client,
-    // but for querying we must use Timestamps if the DB stores them as such.
-    // Let's adjust the logic to query based on ISO strings if they are stored that way.
-    // NOTE: This query might be slow on large datasets without an index.
-    // Let's assume `fecha` is an ISO string for now as per previous implementation.
-    where("fecha", ">=", startDate.toISOString()),
-    where("fecha", "<=", endDate.toISOString())
+    where("comprobante", "==", "FC")
   );
 
   const snapshot = await getDocs(q);
   
-  return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
+  const allFacturas = snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
+
+  // Filter by date in the client-side code
+  const filteredFacturas = allFacturas.filter(mov => {
+      const movDate = new Date(mov.fecha);
+      return movDate >= startDate && movDate < endDate;
+  });
+
+  return filteredFacturas;
 }
 
