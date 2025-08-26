@@ -6,7 +6,7 @@ import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { app } from '@/lib/firebase'; // Asegúrate de que la ruta sea correcta
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BotMessageSquare } from 'lucide-react';
@@ -66,11 +66,6 @@ export default function LoginPage() {
             <Button type="submit" className="w-full">Iniciar Sesión</Button>
           </form>
         </CardContent>
-        <CardFooter>
-          <p className="text-xs text-center w-full text-muted-foreground">
-            ¿No tienes una cuenta? <a href="#" className="underline">Regístrate</a>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );
