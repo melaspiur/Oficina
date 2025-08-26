@@ -1,6 +1,7 @@
 
 
 
+
 export type Task = {
   id: string;
   text: string;
@@ -121,7 +122,9 @@ export type Movimiento = {
     novedadId?: string; // Optional, as a receipt might not have a novedad
     importe: number;
     aplicacion: number;
+    descripcion?: string;
 };
 
 export type MovimientoWithId = Movimiento & { id: string };
+
 

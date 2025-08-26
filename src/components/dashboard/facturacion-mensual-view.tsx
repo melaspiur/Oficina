@@ -77,6 +77,8 @@ export function FacturacionMensualView() {
     
     // 1. Prepare movements data
     const movimientos: Movimiento[] = [];
+    const mesFacturado = facturacionResult.mes;
+    
     facturacionResult.clientes.forEach(cliente => {
         cliente.novedades.forEach(novedad => {
             movimientos.push({
@@ -87,6 +89,7 @@ export function FacturacionMensualView() {
                 novedadId: novedad.novedadId,
                 importe: novedad.importe,
                 aplicacion: novedad.importe,
+                descripcion: `Honorarios por el mes de ${mesFacturado}`,
             });
         });
     });
@@ -95,13 +98,16 @@ export function FacturacionMensualView() {
         // 2. Save movements to the new collection
         await addMovimientosBatch(movimientos);
 
-        // 3. Update the last invoice number in config
-        await updateConfiguracionComprobantes({ ultimoFactura: facturacionResult.ultimoNumeroFactura });
+        // 3. Update the last invoice number and last billed month in config
+        await updateConfiguracionComprobantes({ 
+            ultimoFactura: facturacionResult.ultimoNumeroFactura,
+            ultimoMesEventual: mesFacturado
+        });
         
         console.log("Facturación aceptada y movimientos creados:", facturacionResult);
         toast({
             title: "Proceso Completado",
-            description: "La facturación ha sido aceptada, los movimientos han sido registrados y el número de factura actualizado.",
+            description: "La facturación ha sido aceptada, los movimientos han sido registrados y la configuración actualizada.",
         });
         
         setFacturacionResult(null);
