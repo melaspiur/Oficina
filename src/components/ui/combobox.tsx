@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -67,7 +68,8 @@ export function Combobox({
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <Command filter={(value, search) => {
-            if (value.toLowerCase().includes(search.toLowerCase())) return 1
+            const option = options.find(o => o.value === value);
+            if (option && option.label.toLowerCase().includes(search.toLowerCase())) return 1
             return 0
           }}>
           <CommandInput placeholder={searchPlaceholder} />
@@ -77,9 +79,9 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // Use label for filtering
-                  onSelect={() => {
-                    onValueChange(option.value === value ? null : option.value)
+                  value={option.value} // Use value for selection
+                  onSelect={(currentValue) => {
+                    onValueChange(currentValue === value ? null : currentValue)
                     setOpen(false)
                   }}
                 >
