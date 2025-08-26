@@ -5,18 +5,13 @@ import * as React from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarIcon, Loader2 } from "lucide-react"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+import { Loader2 } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import { Combobox } from "@/components/ui/combobox"
-import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 
 import { getClientes } from "@/lib/services/clientes"
@@ -26,11 +21,26 @@ import { addMovimiento } from "@/lib/services/movimientos"
 
 import type { ClienteWithId, NovedadWithId, ConfiguracionComprobantes, Movimiento } from "@/lib/types"
 
+// Helper to parse dd/mm/yyyy string to Date
+const parseDate = (dateStr: string): Date | undefined => {
+  const [day, month, year] = dateStr.split('/').map(Number);
+  if (!day || !month || !year || String(year).length < 4) return undefined;
+  const date = new Date(year, month - 1, day);
+  // Check if the parsed date is valid
+  if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+    return date;
+  }
+  return undefined;
+};
+
+
 const formSchema = z.object({
   clienteId: z.string().min(1, "Debe seleccionar un cliente."),
   novedadId: z.string().min(1, "Debe seleccionar una novedad."),
-  fecha: z.date({
-    required_error: "Debe seleccionar una fecha.",
+  fecha: z.string().refine((val) => /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
+    message: "El formato de fecha debe ser dd/mm/yyyy",
+  }).refine((val) => parseDate(val) !== undefined, {
+    message: "La fecha ingresada no es válida."
   }),
   descripcion: z.string().max(40, "La descripción no puede tener más de 40 caracteres.").optional(),
   importe: z.coerce.number().min(0.01, "El importe debe ser mayor a cero."),
@@ -50,6 +60,7 @@ export function FacturacionEventualView() {
      defaultValues: {
       importe: 0,
       descripcion: "",
+      fecha: "",
     }
   })
 
@@ -62,7 +73,11 @@ export function FacturacionEventualView() {
           getConfiguracionComprobantes()
         ]);
         setClientes(clientesData.sort((a,b) => a.codigo - b.codigo));
-        setNovedades(novedadesData.sort((a,b) => a.codigo - b.codigo));
+        
+        // Remove duplicates from novedades
+        const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.id, item])).values());
+        setNovedades(uniqueNovedades.sort((a,b) => a.codigo - b.codigo));
+
         setConfig(configData);
       } catch (error) {
          console.error("Error fetching data:", error);
@@ -77,11 +92,31 @@ export function FacturacionEventualView() {
   }, [toast]);
   
   const clienteOptions = React.useMemo(() => clientes.map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` })), [clientes]);
-  const novedadOptions = React.useMemo(() => novedades.map(n => ({ value: n.id, label: `${n.codigo} - ${n.nombre}` })), [novedades]);
+  const novedadOptions = React.useMemo(() => novedades.map(n => ({ value: n.id, label: `${c.codigo} - ${n.nombre}` })), [novedades]);
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
+    if (value.length > 8) {
+      value = value.slice(0, 8);
+    }
+    if (value.length > 4) {
+      value = `${value.slice(0, 2)}/${value.slice(2, 4)}/${value.slice(4)}`;
+    } else if (value.length > 2) {
+      value = `${value.slice(0, 2)}/${value.slice(2)}`;
+    }
+    form.setValue('fecha', value, { shouldValidate: true });
+  };
+
 
   const onSubmit = async (data: FormSchema) => {
     if (!config) {
         toast({ title: "Error", description: "La configuración de facturación no está cargada.", variant: "destructive" });
+        return;
+    }
+
+    const fechaFactura = parseDate(data.fecha);
+    if (!fechaFactura) {
+         toast({ title: "Error", description: "La fecha ingresada no es válida.", variant: "destructive" });
         return;
     }
 
@@ -92,7 +127,7 @@ export function FacturacionEventualView() {
     try {
         const movimiento: Movimiento = {
             clienteId: data.clienteId,
-            fecha: data.fecha.toISOString(),
+            fecha: fechaFactura.toISOString(),
             comprobante: 'FC',
             numero: nuevoNumeroFactura,
             novedadId: data.novedadId,
@@ -119,7 +154,7 @@ export function FacturacionEventualView() {
             descripcion: "",
             clienteId: undefined,
             novedadId: undefined,
-            fecha: undefined,
+            fecha: "",
         });
 
     } catch (error) {
@@ -170,37 +205,15 @@ export function FacturacionEventualView() {
                     control={form.control}
                     name="fecha"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Fecha de Facturación *</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd 'de' LLLL 'de' yyyy", { locale: es })
-                                ) : (
-                                  <span>Seleccione una fecha</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date > new Date() || date < new Date("2000-01-01")}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <Input 
+                            placeholder="dd/mm/yyyy" 
+                            {...field}
+                            onChange={handleDateChange}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -265,3 +278,4 @@ export function FacturacionEventualView() {
   )
 }
 
+    
