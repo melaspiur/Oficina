@@ -69,7 +69,10 @@ export function Combobox({
             filter={(value, search) => {
                 const option = options.find(o => o.value.toLowerCase() === value.toLowerCase());
                 if (option) {
-                    return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                    // Normalize search and label for better matching
+                    const normalizedSearch = search.trim().toLowerCase();
+                    const normalizedLabel = option.label.trim().toLowerCase();
+                    return normalizedLabel.includes(normalizedSearch) ? 1 : 0;
                 }
                 return 0;
             }}
