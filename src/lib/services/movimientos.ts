@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import type { Movimiento } from "@/lib/types";
-import { collection, writeBatch } from "firebase/firestore";
+import { collection, writeBatch, doc } from "firebase/firestore";
 
 const movimientosCollection = collection(db, "movimientos");
 
@@ -18,7 +18,7 @@ export async function addMovimientosBatch(movimientos: Movimiento[]) {
 
     movimientos.forEach(movimiento => {
         // Firestore will auto-generate an ID for the new document
-        const docRef = collection(db, "movimientos").doc(); 
+        const docRef = doc(movimientosCollection); 
         batch.set(docRef, movimiento);
     });
 
