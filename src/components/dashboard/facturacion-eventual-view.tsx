@@ -92,7 +92,7 @@ export function FacturacionEventualView() {
   }, [toast]);
   
   const clienteOptions = React.useMemo(() => clientes.map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` })), [clientes]);
-  const novedadOptions = React.useMemo(() => novedades.map(n => ({ value: n.id, label: `${c.codigo} - ${n.nombre}` })), [novedades]);
+  const novedadOptions = React.useMemo(() => novedades.map(n => ({ value: n.id, label: `${n.codigo} - ${n.nombre}` })), [novedades]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
@@ -277,5 +277,3 @@ export function FacturacionEventualView() {
     </div>
   )
 }
-
-    
