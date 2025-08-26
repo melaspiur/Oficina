@@ -297,6 +297,7 @@ export function FacturacionEventualView() {
                           <Input 
                             type="text" 
                             inputMode="decimal"
+                            className="text-right"
                             value={displayImporte}
                             onFocus={handleImporteFocus}
                             onBlur={handleImporteBlur}
