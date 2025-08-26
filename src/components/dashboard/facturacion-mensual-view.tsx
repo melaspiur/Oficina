@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { generarFacturacion, GenerarFacturacionOutput } from "@/ai/flows/generar-facturacion-flow"
@@ -108,32 +108,42 @@ export function FacturacionMensualView() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Cód. Cliente</TableHead>
-                                <TableHead>Nombre Cliente</TableHead>
-                                <TableHead>Novedades</TableHead>
-                                <TableHead className="text-right">Total Facturado</TableHead>
+                                <TableHead>Cód. Cliente / Novedad</TableHead>
+                                <TableHead>Nombre</TableHead>
+                                <TableHead className="text-right">Cantidad</TableHead>
+                                <TableHead className="text-right">Importe</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {facturacionResult.clientes.map(cliente => (
-                                <TableRow key={cliente.clienteId}>
-                                    <TableCell>{cliente.clienteCodigo}</TableCell>
-                                    <TableCell className="font-medium">{cliente.clienteNombre}</TableCell>
-                                    <TableCell>
-                                        <ul className="list-disc list-inside text-xs">
-                                           {cliente.novedades.map(novedad => (
-                                               <li key={novedad.novedadId}>{novedad.novedadNombre} ({formatCurrency(novedad.importe)})</li>
-                                           ))}
-                                        </ul>
-                                    </TableCell>
-                                    <TableCell className="text-right font-semibold">{formatCurrency(cliente.totalFacturado)}</TableCell>
-                                </TableRow>
+                                <React.Fragment key={cliente.clienteId}>
+                                    <TableRow className="bg-secondary hover:bg-secondary">
+                                        <TableCell className="font-bold">{cliente.clienteCodigo}</TableCell>
+                                        <TableCell className="font-bold">{cliente.clienteNombre}</TableCell>
+                                        <TableCell></TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(cliente.totalFacturado)}</TableCell>
+                                    </TableRow>
+                                    {cliente.novedades.map(novedad => (
+                                        <TableRow key={novedad.novedadId} className="text-sm">
+                                            <TableCell className="pl-8">{novedad.novedadCodigo}</TableCell>
+                                            <TableCell>{novedad.novedadNombre}</TableCell>
+                                            <TableCell className="text-right">{novedad.cantidad.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(novedad.importe)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </React.Fragment>
                             ))}
                         </TableBody>
+                        <TableFooter>
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-right text-lg font-bold">Total General Facturado</TableCell>
+                                <TableCell className="text-right text-lg font-bold">{formatCurrency(facturacionResult.totalGeneral)}</TableCell>
+                            </TableRow>
+                        </TableFooter>
                     </Table>
                 </div>
                 <div className="flex justify-end mt-6">
-                     <Button onClick={handleAceptarFacturacion}>Acepto Facturación Mensual</Button>
+                     <Button onClick={handleAceptarFacturacion} size="lg">Acepto Facturación Mensual</Button>
                 </div>
             </CardContent>
         </Card>
