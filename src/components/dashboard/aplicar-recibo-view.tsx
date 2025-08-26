@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { Combobox } from "@/components/ui/combobox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { getMovimientosPendientesPorCliente } from "@/lib/services/movimientos"
 import { addAplicacionesBatch } from "@/lib/services/aplicaciones"
@@ -18,18 +17,14 @@ import { getClientes } from "@/lib/services/clientes"
 import type { MovimientoWithId, ClienteWithId, Aplicacion } from "@/lib/types"
 
 export function AplicarReciboView() {
-  // Global state
-  const [isLoading, setIsLoading] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [allClientes, setAllClientes] = React.useState<ClienteWithId[]>([])
   
-  // Client-specific state
-  const [selectedCliente, setSelectedCliente] = React.useState<ClienteWithId | null>(null);
   const [selectedClienteId, setSelectedClienteId] = React.useState<string | null>(null);
   const [recibos, setRecibos] = React.useState<MovimientoWithId[]>([]);
   const [facturas, setFacturas] = React.useState<MovimientoWithId[]>([]);
 
-  // Selection state
   const [selectedRecibos, setSelectedRecibos] = React.useState<Set<string>>(new Set());
   const [selectedFacturas, setSelectedFacturas] = React.useState<Set<string>>(new Set());
 
@@ -60,22 +55,13 @@ export function AplicarReciboView() {
   
   // Fetch pending documents when client changes
   const fetchClientData = React.useCallback(async (clienteId: string | null) => {
-    setSelectedClienteId(clienteId);
-    setRecibos([]);
-    setFacturas([]);
-    setSelectedRecibos(new Set());
-    setSelectedFacturas(new Set());
-    
     if (!clienteId) {
-      setSelectedCliente(null);
+      setRecibos([]);
+      setFacturas([]);
       return;
     }
     
-    const cliente = allClientes.find(c => c.id === clienteId);
-    setSelectedCliente(cliente || null);
-
     setIsProcessing(true);
-
     try {
         const { facturas: facturasPendientes, recibos: recibosPendientes } = await getMovimientosPendientesPorCliente(clienteId);
         setFacturas(facturasPendientes);
@@ -93,7 +79,14 @@ export function AplicarReciboView() {
     } finally {
         setIsProcessing(false);
     }
-  }, [allClientes, toast]);
+  }, [toast]);
+
+  const handleSelectCliente = (clienteId: string | null) => {
+    setSelectedClienteId(clienteId);
+    setSelectedRecibos(new Set());
+    setSelectedFacturas(new Set());
+    fetchClientData(clienteId);
+  }
 
   const handleSelectRecibo = (reciboId: string) => {
     const newSelection = new Set(selectedRecibos);
@@ -128,8 +121,8 @@ export function AplicarReciboView() {
   }, [selectedRecibos, selectedFacturas, recibos, facturas]);
   
   const handleAplicar = async () => {
-      if (selectedRecibos.size === 0 || selectedFacturas.size === 0) {
-          toast({ title: "Selección requerida", description: "Debe seleccionar al menos un recibo y una factura.", variant: "destructive" });
+      if (!selectedClienteId || selectedRecibos.size === 0 || selectedFacturas.size === 0) {
+          toast({ title: "Selección requerida", description: "Debe seleccionar un cliente, al menos un recibo y una factura.", variant: "destructive" });
           return;
       }
 
@@ -160,7 +153,7 @@ export function AplicarReciboView() {
                   aplicacionesAGuardar.push({
                       reciboId: recibo.id,
                       facturaId: factura.id,
-                      clienteId: selectedClienteId!,
+                      clienteId: selectedClienteId,
                       fecha: new Date().toISOString(),
                       importe: montoAAplicar
                   });
@@ -176,15 +169,14 @@ export function AplicarReciboView() {
           await addAplicacionesBatch(aplicacionesAGuardar);
           toast({
               title: "Aplicación Exitosa",
-              description: `Se aplicaron ${formatCurrency(totalRecibos - saldoTotalRecibos)} correctamente.`,
+              description: `La aplicación se guardó correctamente. Refrescando datos...`,
           });
-          // Refresh data
-          fetchClientData(selectedClienteId);
+          // Refresh data from Firestore to get the updated values
+          handleSelectCliente(selectedClienteId);
       } catch (error) {
            console.error("Error al guardar aplicación:", error);
            toast({ title: "Error", description: "No se pudo guardar la aplicación.", variant: "destructive" });
-      } finally {
-          setIsProcessing(false);
+           setIsProcessing(false);
       }
   };
 
@@ -195,6 +187,8 @@ export function AplicarReciboView() {
           currency: 'ARS',
       }).format(value);
   };
+  
+  const selectedCliente = allClientes.find(c => c.id === selectedClienteId)
   
   return (
     <div className="p-6 space-y-6">
@@ -211,7 +205,7 @@ export function AplicarReciboView() {
             <Combobox 
                 options={clienteOptions}
                 value={selectedClienteId}
-                onValueChange={fetchClientData}
+                onValueChange={handleSelectCliente}
                 placeholder="Seleccione un cliente..."
                 searchPlaceholder="Buscar cliente..."
                 notFoundMessage="No se encontraron clientes."
@@ -228,7 +222,6 @@ export function AplicarReciboView() {
             </div>
         ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-            {/* Recibos */}
             <Card>
                 <CardHeader>
                     <CardTitle>Recibos Pendientes de Aplicar</CardTitle>
@@ -265,7 +258,6 @@ export function AplicarReciboView() {
                 </CardContent>
             </Card>
 
-            {/* Facturas */}
              <Card>
                 <CardHeader>
                     <CardTitle>Facturas Pendientes de Pago</CardTitle>
@@ -302,7 +294,6 @@ export function AplicarReciboView() {
                 </CardContent>
             </Card>
 
-            {/* Resumen y Acción */}
             <Card className="xl:col-span-2">
                 <CardHeader>
                     <CardTitle>Resumen de Aplicación</CardTitle>
