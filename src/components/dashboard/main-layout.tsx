@@ -28,19 +28,16 @@ import {
   ChevronDown,
   Newspaper,
   User,
-  ClipboardList,
-  Upload,
-  UserCheck,
-  FileClock,
+  ClipboardSignature,
   FileKey,
   DollarSign,
-  BookUser,
-  CalendarClock,
-  Landmark,
-  Wallet,
   Calendar,
   Contact,
-  ClipboardSignature,
+  Landmark,
+  Wallet,
+  Pencil,
+  CheckSquare,
+  FilePlus,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -50,7 +47,7 @@ import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionView } from './facturacion-view';
 import { AsignacionView } from './asignacion-view';
-import { CobranzaView } from './cobranza-view';
+import { ReciboView } from './recibo-view';
 import { ComprobantesView } from './comprobantes-view';
 import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
 import { InformeFacturacionClienteView } from './informe-facturacion-cliente-view';
@@ -68,6 +65,7 @@ export function MainLayout() {
   const [activeView, setActiveView] = React.useState('clientes-cliente');
   const [isClientesOpen, setIsClientesOpen] = React.useState(true);
   const [isFacturacionOpen, setIsFacturacionOpen] = React.useState(false);
+  const [isCobranzasOpen, setIsCobranzasOpen] = React.useState(false);
   const [isAjustesOpen, setIsAjustesOpen] = React.useState(false);
   const [isInformesOpen, setIsInformesOpen] = React.useState(false);
   const [isFacturacionInformeOpen, setIsFacturacionInformeOpen] = React.useState(false);
@@ -93,8 +91,12 @@ export function MainLayout() {
         return <AsignacionView />;
       case 'facturacion':
         return <FacturacionView />;
-      case 'cobranzas':
-        return <CobranzaView />;
+      case 'cobranzas-generar-recibo':
+        return <ReciboView />;
+      case 'cobranzas-modificar-recibo':
+        return <PlaceholderView title="Modificar Recibo" />;
+      case 'cobranzas-aplicar-recibo':
+        return <PlaceholderView title="Aplicar Recibo" />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
       case 'informes-facturacion-mensual':
@@ -129,9 +131,11 @@ export function MainLayout() {
         if (activeView === 'informes-cobranzas') return "Informe de Cobranzas";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
      }
-     if (activeView === 'cobranzas') {
-      return "Cobranzas";
-    }
+     if (activeView.startsWith('cobranzas-')) {
+        if (activeView === 'cobranzas-generar-recibo') return "Generar Recibo";
+        if (activeView === 'cobranzas-modificar-recibo') return "Modificar Recibo";
+        if (activeView === 'cobranzas-aplicar-recibo') return "Aplicar Recibo";
+     }
      const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
      return viewName;
   }
@@ -204,11 +208,47 @@ export function MainLayout() {
                     <span>Facturación</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('cobranzas')} isActive={activeView === 'cobranzas'} tooltip="Cobranzas">
+            <SidebarMenuItem>
+              <SidebarMenuButton 
+                onClick={() => setIsCobranzasOpen(!isCobranzasOpen)} 
+                isActive={activeView.startsWith('cobranzas-')}
+                tooltip="Cobranzas">
                 <DollarSign />
                 <span>Cobranzas</span>
+                <ChevronDown
+                  className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                    isCobranzasOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </SidebarMenuButton>
+              {isCobranzasOpen && (
+                 <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton 
+                        onClick={() => setActiveView('cobranzas-generar-recibo')} 
+                        isActive={activeView === 'cobranzas-generar-recibo'}>
+                        <FilePlus />
+                        <span>Generar Recibo</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton 
+                        onClick={() => setActiveView('cobranzas-modificar-recibo')} 
+                        isActive={activeView === 'cobranzas-modificar-recibo'}>
+                        <Pencil />
+                        <span>Modificar Recibo</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton 
+                        onClick={() => setActiveView('cobranzas-aplicar-recibo')} 
+                        isActive={activeView === 'cobranzas-aplicar-recibo'}>
+                        <CheckSquare />
+                        <span>Aplicar Recibo</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                 </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
             <SidebarMenuItem>
                  <SidebarMenuButton
@@ -341,5 +381,3 @@ export function MainLayout() {
     </SidebarProvider>
   );
 }
-
-    
