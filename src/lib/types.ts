@@ -2,6 +2,7 @@
 
 
 
+
 export type Task = {
   id: string;
   text: string;
@@ -55,9 +56,19 @@ export type Meses = {
   diciembre: boolean;
 };
 
-export const mesesList: (keyof Meses)[] = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+export const mesesList: { value: string; label: string }[] = [
+    { value: '1', label: 'Enero' },
+    { value: '2', label: 'Febrero' },
+    { value: '3', label: 'Marzo' },
+    { value: '4', label: 'Abril' },
+    { value: '5', label: 'Mayo' },
+    { value: '6', label: 'Junio' },
+    { value: '7', label: 'Julio' },
+    { value: '8', label: 'Agosto' },
+    { value: '9', label: 'Septiembre' },
+    { value: '10', label: 'Octubre' },
+    { value: '11', label: 'Noviembre' },
+    { value: '12', label: 'Diciembre' },
 ];
 
 export type Novedad = {
@@ -104,15 +115,6 @@ export type ClienteFacturado = {
   totalFacturado: number;
 };
 
-export type FacturacionResult = {
-  mes: string;
-  fechaFacturacion: string;
-  clientes: ClienteFacturado[];
-  totalGeneral: number;
-  ultimoNumeroFactura: number;
-};
-
-
 // Type for movements collection
 export type Movimiento = {
     clienteId: string;
@@ -126,5 +128,3 @@ export type Movimiento = {
 };
 
 export type MovimientoWithId = Movimiento & { id: string };
-
-

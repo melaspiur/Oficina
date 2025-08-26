@@ -34,6 +34,8 @@ import {
   FileClock,
   FileKey,
   DollarSign,
+  BookUser,
+  CalendarClock,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -60,6 +62,7 @@ export function MainLayout() {
   const [isClientesOpen, setIsClientesOpen] = React.useState(true);
   const [isFacturacionOpen, setIsFacturacionOpen] = React.useState(false);
   const [isAjustesOpen, setIsAjustesOpen] = React.useState(false);
+  const [isInformesOpen, setIsInformesOpen] = React.useState(false);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -90,8 +93,10 @@ export function MainLayout() {
         return <ImportacionView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
-      case 'informes':
-        return <PlaceholderView title="Informes" />;
+      case 'informes-mensual':
+        return <PlaceholderView title="Informe de Facturación Mensual" />;
+      case 'informes-cliente':
+        return <PlaceholderView title="Informe de Facturación por Cliente" />;
       default:
         return <ClientesView />;
     }
@@ -112,6 +117,11 @@ export function MainLayout() {
       if (activeView.startsWith('ajustes-')) {
         const title = activeView.split('-')[1];
         if (activeView === 'ajustes-comprobantes') return "Comprobantes";
+     }
+      if (activeView.startsWith('informes-')) {
+        const title = activeView.split('-')[1];
+        if (activeView === 'informes-mensual') return "Informe Mensual";
+        if (activeView === 'informes-cliente') return "Informe por Cliente";
      }
      if (activeView === 'cobranza') {
       return "Cobranza";
@@ -228,10 +238,39 @@ export function MainLayout() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('informes')} isActive={activeView === 'informes'} tooltip="Informes">
-                <LineChart />
-                <span>Informes</span>
+                 <SidebarMenuButton
+                    onClick={() => setIsInformesOpen(!isInformesOpen)}
+                    isActive={activeView.startsWith('informes-')}
+                    tooltip="Informes"
+                >
+                    <LineChart />
+                    <span>Informes</span>
+                    <ChevronDown
+                    className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                        isInformesOpen ? 'rotate-180' : ''
+                    }`}
+                    />
               </SidebarMenuButton>
+               {isInformesOpen && (
+                <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('informes-mensual')} 
+                        isActive={activeView === 'informes-mensual'}>
+                        <CalendarClock />
+                        <span>Informe Mensual</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('informes-cliente')} 
+                        isActive={activeView === 'informes-cliente'}>
+                        <BookUser />
+                        <span>Informe por Cliente</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton

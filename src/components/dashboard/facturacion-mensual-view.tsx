@@ -18,8 +18,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { generarFacturacion } from "@/ai/flows/generar-facturacion-flow"
-import { mesesList, type FacturacionResult, type Movimiento, type ConfiguracionComprobantes } from "@/lib/types"
+import { generarFacturacion, type GenerarFacturacionOutput } from "@/ai/flows/generar-facturacion-flow"
+import { mesesList, type Movimiento, type ConfiguracionComprobantes, type ClienteFacturado } from "@/lib/types"
 import { getConfiguracionComprobantes, updateConfiguracionComprobantes } from "@/lib/services/configuracion"
 import { addMovimientosBatch } from "@/lib/services/movimientos"
 
@@ -34,7 +34,7 @@ type FormSchema = z.infer<typeof formSchema>
 
 export function FacturacionMensualView() {
   const [isProcessing, setIsProcessing] = React.useState(false)
-  const [facturacionResult, setFacturacionResult] = React.useState<FacturacionResult | null>(null)
+  const [facturacionResult, setFacturacionResult] = React.useState<GenerarFacturacionOutput | null>(null)
   const [config, setConfig] = React.useState<ConfiguracionComprobantes | null>(null);
   const { toast } = useToast()
 
@@ -63,9 +63,14 @@ export function FacturacionMensualView() {
   }, [toast]);
 
   const onSubmit = async (data: FormSchema) => {
-    const mesSeleccionado = mesesList[Number(data.mes) - 1];
+    const mesSeleccionado = mesesList.find(m => m.value === data.mes)?.label;
+    
+    if (!mesSeleccionado) {
+        toast({ title: "Error", description: "Mes seleccionado no válido.", variant: "destructive" });
+        return;
+    }
 
-    if (config && config.ultimoMesEventual === mesSeleccionado) {
+    if (config && config.ultimoMesEventual === mesSeleccionado.toLowerCase()) {
       toast({
         title: "Mes ya Facturado",
         description: `El mes de ${mesSeleccionado} ya ha sido procesado. No se puede facturar de nuevo.`,
@@ -79,7 +84,7 @@ export function FacturacionMensualView() {
     
     try {
       const result = await generarFacturacion({ 
-        mes: mesSeleccionado,
+        mes: mesSeleccionado.toLowerCase(),
         fechaFacturacion: data.fechaFacturacion.toISOString()
       });
       setFacturacionResult(result);
@@ -191,7 +196,7 @@ export function FacturacionMensualView() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {facturacionResult.clientes.map(cliente => (
+                            {facturacionResult.clientes.map((cliente: ClienteFacturado) => (
                                 <React.Fragment key={cliente.clienteId}>
                                     <TableRow className="bg-secondary hover:bg-secondary pointer-events-none">
                                         <TableCell className="font-bold">{cliente.clienteCodigo}</TableCell>
@@ -255,8 +260,8 @@ export function FacturacionMensualView() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {mesesList.map((mes, index) => (
-                           <SelectItem key={mes} value={String(index + 1)} className="capitalize">{mes}</SelectItem>
+                        {mesesList.map((mes) => (
+                           <SelectItem key={mes.value} value={mes.value} className="capitalize">{mes.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -316,5 +321,3 @@ export function FacturacionMensualView() {
     </div>
   )
 }
-
-    

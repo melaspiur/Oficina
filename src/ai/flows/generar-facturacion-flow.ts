@@ -12,8 +12,10 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getClientes, type ClienteWithId } from '@/lib/services/clientes';
 import { getNovedades, type NovedadWithId } from '@/lib/services/novedades';
-import { getAsignaciones, type AsignacionWithId } from '@/lib/services/asignaciones';
+import { getAsignaciones } from '@/lib/services/asignaciones';
 import { getConfiguracionComprobantes } from '@/lib/services/configuracion';
+import type { ClienteFacturado } from '@/lib/types';
+
 
 // Esquema de entrada
 const GenerarFacturacionInputSchema = z.object({
@@ -110,7 +112,7 @@ const generarFacturacionFlow = ai.defineFlow(
     }
     
     // 3. Formatear la salida
-    const clientesFacturados: z.infer<typeof ClienteFacturadoSchema>[] = [];
+    const clientesFacturados: ClienteFacturado[] = [];
     let totalGeneral = 0;
 
     for (const [clienteId, data] of facturacionPorCliente.entries()) {
