@@ -33,6 +33,7 @@ import {
   UserCheck,
   FileClock,
   FileKey,
+  DollarSign,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -85,7 +86,7 @@ export function MainLayout() {
         return <FacturacionMensualView />;
       case 'facturacion-eventual':
         return <PlaceholderView title="Factura Eventual" />;
-      case 'importacion':
+      case 'cobranza':
         return <ImportacionView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
@@ -112,8 +113,8 @@ export function MainLayout() {
         const title = activeView.split('-')[1];
         if (activeView === 'ajustes-comprobantes') return "Comprobantes";
      }
-     if (activeView === 'importacion') {
-      return "Importación y Asignación Masiva";
+     if (activeView === 'cobranza') {
+      return "Cobranza";
     }
      const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
      return viewName;
@@ -221,9 +222,9 @@ export function MainLayout() {
               )}
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('importacion')} isActive={activeView === 'importacion'} tooltip="Importación">
-                <Upload />
-                <span>Importación</span>
+              <SidebarMenuButton onClick={() => setActiveView('cobranza')} isActive={activeView === 'cobranza'} tooltip="Cobranza">
+                <DollarSign />
+                <span>Cobranza</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

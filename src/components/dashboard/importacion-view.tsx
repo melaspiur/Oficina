@@ -63,26 +63,26 @@ export function ImportacionView() {
         return;
     }
 
-    addLog({ type: 'info', message: 'Iniciando procesamiento de importación masiva...' });
+    addLog({ type: 'info', message: 'Iniciando procesamiento de cobranzas...' });
 
     const lines = inputText.split('\n');
     let currentCliente: ClienteWithId | null = null;
     let assignmentPromises: Promise<any>[] = [];
     let processedCount = 0;
 
+    const normalizeName = (name: string) => name.replace(/\s+/g, ' ').trim().toUpperCase();
+
     for (const line of lines) {
         const trimmedLine = line.trim();
         if (trimmedLine.includes('; ---------------------------')) {
             const nombreCliente = trimmedLine.split(';')[0].trim();
             if (nombreCliente) {
-                // Normalize names for robust matching: remove extra spaces and convert to uppercase
-                const normalizeName = (name: string) => name.replace(/\s+/g, ' ').trim().toUpperCase();
                 const nombreClienteNormalizado = normalizeName(nombreCliente);
 
                 currentCliente = clientesDb.find(c => normalizeName(c.nombre) === nombreClienteNormalizado) || null;
                 
                 if (!currentCliente) {
-                    addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado en la base de datos. Se omitirán sus novedades.` });
+                    addLog({ type: 'warning', message: `Cliente "${nombreCliente}" no encontrado. Se omitirán sus novedades.` });
                 } else {
                     addLog({ type: 'info', message: `Procesando cliente: ${currentCliente.nombre}`});
                 }
@@ -97,7 +97,7 @@ export function ImportacionView() {
                 const cantidad = parseFloat(cantidadStr.replace(',', '.'));
 
                 if (isNaN(codigo) || isNaN(cantidad)) {
-                    addLog({ type: 'warning', message: `Línea de novedad inválida para "${currentCliente.nombre}": ${line}` });
+                    addLog({ type: 'warning', message: `Línea inválida para "${currentCliente.nombre}": ${line}` });
                     continue;
                 }
 
@@ -116,7 +116,7 @@ export function ImportacionView() {
                     processedCount++;
                 }).catch((error) => {
                     if (error.message.includes("ya ha sido asignada")) {
-                         addLog({ type: 'warning', message: `Asignación OMITIDA (duplicada): Cliente "${currentCliente?.nombre}" -> Novedad "${novedad.nombre}".` });
+                         addLog({ type: 'warning', message: `OMITIDA (duplicada): Cliente "${currentCliente?.nombre}" -> Novedad "${novedad.nombre}".` });
                     } else {
                         addLog({ type: 'error', message: `Error al asignar novedad ${novedad.nombre} a ${currentCliente?.nombre}: ${error.message}` });
                     }
@@ -141,16 +141,16 @@ export function ImportacionView() {
     <div className="p-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Importar y Asignar Novedades</CardTitle>
+          <CardTitle>Procesar Cobranzas Masivas</CardTitle>
           <CardDescription>
-            Pegue el listado de texto para crear masivamente las asignaciones.
+            Pegue el listado de texto para procesar las cobranzas.
             El sistema buscará cada cliente por nombre y cada novedad por código para crear un nuevo registro de asignación.
             Si una asignación para la misma novedad y cliente ya existe, se mostrará un aviso y se omitirá.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Textarea
-            placeholder="Pegue aquí el texto del listado..."
+            placeholder="Pegue aquí el texto del listado de cobranzas..."
             className="min-h-[300px] font-mono text-xs"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -163,7 +163,7 @@ export function ImportacionView() {
                 Procesando...
               </>
             ) : (
-              "Procesar y Asignar Novedades"
+              "Procesar Cobranzas"
             )}
           </Button>
         </CardContent>
