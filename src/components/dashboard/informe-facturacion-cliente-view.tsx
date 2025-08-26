@@ -180,19 +180,19 @@ export function InformeFacturacionClienteView() {
                 placeholder="Seleccione un cliente..."
                 searchPlaceholder="Buscar cliente..."
                 notFoundMessage="No se encontraron clientes."
-                disabled={isProcessing}
+                disabled={allClientes.length === 0}
             />
           </div>
         </CardContent>
       </Card>
       
-      { (isProcessing || reportData.length > 0) && (
+      { (isProcessing || reportData.length > 0 || (selectedClienteId && !isProcessing)) && (
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
                         <CardTitle>Resultados del Informe</CardTitle>
-                        {selectedCliente && (
+                        {selectedCliente && !isProcessing && (
                             <CardDescription>
                                 Mostrando {reportData.length} facturas para {selectedCliente.nombre}.
                             </CardDescription>
@@ -230,7 +230,7 @@ export function InformeFacturacionClienteView() {
                                         <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                                     </TableCell>
                                 </TableRow>
-                            ) : (
+                            ) : reportData.length > 0 ? (
                                 reportData.map((mov) => (
                                     <TableRow key={mov.id}>
                                         <TableCell>{format(new Date(mov.fecha), 'dd/MM/yyyy')}</TableCell>
@@ -239,14 +239,22 @@ export function InformeFacturacionClienteView() {
                                         <TableCell className="text-right font-medium">{formatCurrency(mov.importe)}</TableCell>
                                     </TableRow>
                                 ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center h-24">
+                                        No se encontraron facturas para este cliente en el último año.
+                                    </TableCell>
+                                </TableRow>
                             )}
                         </TableBody>
-                        <TableFooter>
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-right font-bold text-lg">Total Facturado</TableCell>
-                                <TableCell className="text-right font-bold text-lg">{formatCurrency(totalFacturado)}</TableCell>
-                            </TableRow>
-                        </TableFooter>
+                        {reportData.length > 0 && !isProcessing && (
+                            <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-right font-bold text-lg">Total Facturado</TableCell>
+                                    <TableCell className="text-right font-bold text-lg">{formatCurrency(totalFacturado)}</TableCell>
+                                </TableRow>
+                            </TableFooter>
+                        )}
                     </Table>
                 </div>
             </CardContent>
@@ -255,3 +263,5 @@ export function InformeFacturacionClienteView() {
     </div>
   )
 }
+
+    
