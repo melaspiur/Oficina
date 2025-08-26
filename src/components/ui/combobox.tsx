@@ -45,8 +45,15 @@ export function Combobox({
     disabled = false
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const selectedOption = options.find((option) => option.value === value)
+
+  React.useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+    }
+  }, [open]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,11 +73,11 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command filter={(value, search) => {
-            const option = options.find(o => o.value === value);
-            if (option && option.label.toLowerCase().includes(search.toLowerCase())) return 1
+            const optionLabel = options.find(o => o.value === value)?.label ?? "";
+            if (optionLabel.toLowerCase().includes(search.toLowerCase())) return 1
             return 0
           }}>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput ref={inputRef} placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
             <CommandGroup>
