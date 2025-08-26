@@ -2,12 +2,15 @@
 "use client"
 
 import * as React from "react"
-import { useForm, Controller } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Loader2 } from "lucide-react"
+import { Loader2, FileDown } from "lucide-react"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
+import Papa from "papaparse"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,7 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { useToast } from "@/hooks/use-toast"
 import { getMovimientosFacturasPorMes } from "@/lib/services/movimientos"
 import { getClientes } from "@/lib/services/clientes"
-import type { MovimientoWithId, ClienteWithId } from "@/lib/types"
+import type { MovimientoWithId } from "@/lib/types"
 
 const currentYear = new Date().getFullYear()
 
@@ -104,7 +107,7 @@ export function InformeFacturacionMensualView() {
           currency: 'ARS',
       }).format(value);
   };
-  
+
   const totalFacturado = React.useMemo(() => {
       return reportData.reduce((acc, item) => acc + item.importe, 0);
   }, [reportData]);
@@ -115,6 +118,66 @@ export function InformeFacturacionMensualView() {
   }));
 
   const anosOptions = Array.from({ length: 10 }, (_, i) => String(currentYear - i));
+
+  const handleExportCSV = () => {
+    const { mes, ano } = form.getValues();
+    const mesLabel = mesesOptions.find(m => m.value === mes)?.label;
+    const fileName = `Facturacion_${mesLabel}_${ano}.csv`;
+
+    const dataForCsv = reportData.map(item => ({
+        Fecha: format(new Date(item.fecha), 'dd/MM/yyyy'),
+        Numero: `${item.comprobante}-${String(item.numero).padStart(8, '0')}`,
+        Cliente: item.clienteNombre,
+        Descripcion: item.descripcion,
+        Importe: item.importe.toFixed(2),
+    }));
+
+    const csv = Papa.unparse(dataForCsv);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  };
+
+  const handleExportPDF = () => {
+    const { mes, ano } = form.getValues();
+    const mesLabel = mesesOptions.find(m => m.value === mes)?.label;
+    const fileName = `Facturacion_${mesLabel}_${ano}.pdf`;
+    
+    const doc = new jsPDF();
+    doc.text(`Informe de Facturación - ${mesLabel} ${ano}`, 14, 16);
+
+    autoTable(doc, {
+      startY: 22,
+      head: [['Fecha', 'Número', 'Cliente', 'Descripción', 'Importe']],
+      body: reportData.map(item => [
+          format(new Date(item.fecha), 'dd/MM/yyyy'),
+          `${item.comprobante}-${String(item.numero).padStart(8, '0')}`,
+          item.clienteNombre || '',
+          item.descripcion || '',
+          { content: formatCurrency(item.importe), styles: { halign: 'right' } }
+      ]),
+      foot: [
+          [{ content: 'Total General', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold' } },
+           { content: formatCurrency(totalFacturado), styles: { halign: 'right', fontStyle: 'bold' } }]
+      ],
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      footStyles: { fillColor: [236, 240, 241], textColor: 0 },
+      styles: { fontSize: 8 },
+      columnStyles: {
+          4: { halign: 'right' }
+      }
+    });
+
+    doc.save(fileName);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -184,13 +247,29 @@ export function InformeFacturacionMensualView() {
       {hasSearched && (
         <Card>
             <CardHeader>
-                <CardTitle>Resultados del Informe</CardTitle>
-                 <CardDescription>
-                    {reportData.length > 0 
-                        ? `Se encontraron ${reportData.length} facturas.`
-                        : "No se encontraron resultados para su búsqueda."
-                    }
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <CardTitle>Resultados del Informe</CardTitle>
+                        <CardDescription>
+                            {reportData.length > 0 
+                                ? `Se encontraron ${reportData.length} facturas.`
+                                : "No se encontraron resultados para su búsqueda."
+                            }
+                        </CardDescription>
+                    </div>
+                     {reportData.length > 0 && (
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Exportar a CSV
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                               <FileDown className="mr-2 h-4 w-4" />
+                                Exportar a PDF
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </CardHeader>
             {reportData.length > 0 && (
                 <CardContent>
