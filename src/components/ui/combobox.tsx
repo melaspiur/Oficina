@@ -64,10 +64,16 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" >
+        <Command filter={(value, search) => {
+            const option = options.find(o => o.value === value);
+            if (option) {
+                return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+            }
+            return 0;
+        }}>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
+          <CommandList onMouseDown={(e) => e.preventDefault()}>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
