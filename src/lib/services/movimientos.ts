@@ -1,9 +1,21 @@
 
 import { db } from "@/lib/firebase";
 import type { Movimiento, MovimientoWithId } from "@/lib/types";
-import { collection, writeBatch, doc, getDocs, query, where, Timestamp } from "firebase/firestore";
+import { collection, writeBatch, doc, getDocs, query, where, addDoc } from "firebase/firestore";
 
 const movimientosCollection = collection(db, "movimientos");
+
+/**
+ * Adds a single movement document to the 'movimientos' collection.
+ * @param movimiento The Movimiento object to add.
+ */
+export async function addMovimiento(movimiento: Movimiento) {
+    if (!movimiento) {
+        throw new Error("Movimiento data is required.");
+    }
+    await addDoc(movimientosCollection, movimiento);
+}
+
 
 /**
  * Adds an array of movement documents to the 'movimientos' collection using a batch write.
@@ -72,4 +84,3 @@ export async function getMovimientosFacturasPorCliente(clienteId: string): Promi
 
   return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
 }
-

@@ -49,6 +49,7 @@ import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionMensualView } from './facturacion-mensual-view';
+import { FacturacionEventualView } from './facturacion-eventual-view';
 import { AsignacionView } from './asignacion-view';
 import { ImportacionView } from './importacion-view';
 import { ComprobantesView } from './comprobantes-view';
@@ -94,7 +95,7 @@ export function MainLayout() {
       case 'facturacion-mensual':
         return <FacturacionMensualView />;
       case 'facturacion-eventual':
-        return <PlaceholderView title="Factura Eventual" />;
+        return <FacturacionEventualView />;
       case 'cobranza':
         return <ImportacionView />;
       case 'ajustes-comprobantes':
