@@ -52,6 +52,8 @@ import { AsignacionIndividualView } from './asignacion-individual-view';
 import { AsignacionClienteView } from './asignacion-cliente-view';
 import { ImportacionView } from './importacion-view';
 import { ComprobantesView } from './comprobantes-view';
+import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
+
 
 // Vistas dinámicas
 const PlaceholderView = ({ title }: { title: string }) => (
@@ -99,7 +101,7 @@ export function MainLayout() {
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
       case 'informes-facturacion-mensual':
-        return <PlaceholderView title="Informe de Facturación Mensual" />;
+        return <InformeFacturacionMensualView />;
       case 'informes-facturacion-cliente':
         return <PlaceholderView title="Informe de Facturación por Cliente" />;
       case 'informes-cobranzas':
