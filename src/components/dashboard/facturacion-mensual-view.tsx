@@ -120,7 +120,7 @@ export function FacturacionMensualView() {
                 numero: novedad.numeroFactura,
                 novedadId: novedad.novedadId,
                 importe: novedad.importe,
-                aplicacion: novedad.importe,
+                aplicacion: 0,
                 descripcion: `Honorarios por el mes de ${mesFacturado}`,
             });
         });

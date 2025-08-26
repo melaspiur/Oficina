@@ -159,7 +159,7 @@ export function FacturacionEventualView() {
             numero: nuevoNumeroFactura,
             novedadId: data.novedadId,
             importe: data.importe,
-            aplicacion: data.importe,
+            aplicacion: 0,
             descripcion: data.descripcion || novedades.find(n => n.id === data.novedadId)?.nombre || 'Factura eventual',
         };
 

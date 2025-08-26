@@ -57,18 +57,14 @@ export function AplicacionReciboDialog({
 
     // Do not allow applying more than the invoice balance
     const importeValido = Math.min(importe, factura.saldo);
-
-    newAplicaciones.set(facturaId, importeValido);
-
-    const totalAplicado = Array.from(newAplicaciones.values()).reduce((sum, val) => sum + val, 0);
-    const reciboTotal = recibo?.importe || 0;
-
-    if (totalAplicado > reciboTotal) {
-        // This should not happen if we cap individual applications, but as a safeguard
-        const exceso = totalAplicado - reciboTotal;
-        newAplicaciones.set(facturaId, importeValido - exceso);
-    }
     
+    // Check total applied against receipt total
+    const currentTotalAplicado = Array.from(newAplicaciones.values()).reduce((sum, val) => sum + val, 0) - (newAplicaciones.get(facturaId) || 0);
+    const reciboTotal = recibo?.importe || 0;
+    
+    const importeFinal = Math.min(importeValido, reciboTotal - currentTotalAplicado);
+
+    newAplicaciones.set(facturaId, importeFinal);
     setAplicaciones(newAplicaciones);
   };
   
@@ -159,7 +155,7 @@ export function AplicacionReciboDialog({
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button type="button" onClick={handleSave} disabled={facturas.length === 0}>Guardar Aplicación</Button>
+          <Button type="button" onClick={handleSave} disabled={facturas.length === 0 || ((recibo?.importe || 0) - saldoRecibo) <= 0}>Guardar Aplicación</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -142,16 +142,12 @@ export function ReciboView() {
       movimientos.filter(m => m.comprobante === 'FC').forEach(fc => {
           facturas.set(fc.id, {
               ...fc,
-              saldo: fc.importe
+              saldo: fc.importe - fc.aplicacion
           });
       });
       
-      // Calculate payments made from 'aplicaciones' collection later if needed
-      // For now, we assume saldo is full importe
-      // This will be more complex when we have applications.
-
       return Array.from(facturas.values())
-        .filter(f => f.saldo > 0)
+        .filter(f => f.saldo > 0.005) // Use a small epsilon for float comparison
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
   }
 
