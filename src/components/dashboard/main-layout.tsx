@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -51,6 +50,7 @@ import { ReciboView } from './recibo-view';
 import { ComprobantesView } from './comprobantes-view';
 import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
 import { InformeFacturacionClienteView } from './informe-facturacion-cliente-view';
+import { ModificarReciboView } from './modificar-recibo-view';
 
 
 // Vistas dinámicas
@@ -94,7 +94,7 @@ export function MainLayout() {
       case 'cobranzas-generar-recibo':
         return <ReciboView />;
       case 'cobranzas-modificar-recibo':
-        return <PlaceholderView title="Modificar Recibo" />;
+        return <ModificarReciboView />;
       case 'cobranzas-aplicar-recibo':
         return <PlaceholderView title="Aplicar Recibo" />;
       case 'ajustes-comprobantes':

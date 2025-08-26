@@ -1,7 +1,7 @@
 
 import { db } from "@/lib/firebase";
 import type { Movimiento, MovimientoWithId } from "@/lib/types";
-import { collection, writeBatch, doc, getDocs, query, where, addDoc } from "firebase/firestore";
+import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc } from "firebase/firestore";
 
 const movimientosCollection = collection(db, "movimientos");
 
@@ -37,6 +37,16 @@ export async function addMovimientosBatch(movimientos: Movimiento[]) {
     });
 
     await batch.commit();
+}
+
+/**
+ * Updates a movement document in the 'movimientos' collection.
+ * @param id The ID of the movement document to update.
+ * @param data The partial data to update.
+ */
+export async function updateMovimiento(id: string, data: Partial<Movimiento>) {
+    const movimientoDoc = doc(db, "movimientos", id);
+    await updateDoc(movimientoDoc, data);
 }
 
 
