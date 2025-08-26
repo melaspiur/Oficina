@@ -38,6 +38,8 @@ import {
   CalendarClock,
   Landmark,
   Wallet,
+  Calendar,
+  Contact,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -65,6 +67,7 @@ export function MainLayout() {
   const [isFacturacionOpen, setIsFacturacionOpen] = React.useState(false);
   const [isAjustesOpen, setIsAjustesOpen] = React.useState(false);
   const [isInformesOpen, setIsInformesOpen] = React.useState(false);
+  const [isFacturacionInformeOpen, setIsFacturacionInformeOpen] = React.useState(false);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -95,8 +98,10 @@ export function MainLayout() {
         return <ImportacionView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
-      case 'informes-facturacion':
-        return <PlaceholderView title="Informe de Facturación" />;
+      case 'informes-facturacion-mensual':
+        return <PlaceholderView title="Informe de Facturación Mensual" />;
+      case 'informes-facturacion-cliente':
+        return <PlaceholderView title="Informe de Facturación por Cliente" />;
       case 'informes-cobranzas':
         return <PlaceholderView title="Informe de Cobranzas" />;
       case 'informes-cuenta-corriente':
@@ -123,7 +128,8 @@ export function MainLayout() {
         if (activeView === 'ajustes-comprobantes') return "Comprobantes";
      }
       if (activeView.startsWith('informes-')) {
-        if (activeView === 'informes-facturacion') return "Informe de Facturación";
+        if (activeView === 'informes-facturacion-mensual') return "Informe de Facturación Mensual";
+        if (activeView === 'informes-facturacion-cliente') return "Informe de Facturación por Cliente";
         if (activeView === 'informes-cobranzas') return "Informe de Cobranzas";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
      }
@@ -257,14 +263,41 @@ export function MainLayout() {
               </SidebarMenuButton>
                {isInformesOpen && (
                 <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                        onClick={() => setActiveView('informes-facturacion')} 
-                        isActive={activeView === 'informes-facturacion'}>
-                        <FileText />
-                        <span>Facturación</span>
-                        </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={() => setIsFacturacionInformeOpen(!isFacturacionInformeOpen)}
+                            isActive={activeView.startsWith('informes-facturacion')}
+                            className="h-8"
+                        >
+                            <FileText />
+                            <span>Facturación</span>
+                             <ChevronDown
+                                className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                                    isFacturacionInformeOpen ? 'rotate-180' : ''
+                                }`}
+                            />
+                        </SidebarMenuButton>
+                        {isFacturacionInformeOpen && (
+                             <SidebarMenuSub>
+                                <SidebarMenuSubItem>
+                                    <SidebarMenuSubButton 
+                                    onClick={() => setActiveView('informes-facturacion-mensual')} 
+                                    isActive={activeView === 'informes-facturacion-mensual'}>
+                                        <Calendar />
+                                        <span>Mensual</span>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                                <SidebarMenuSubItem>
+                                    <SidebarMenuSubButton 
+                                    onClick={() => setActiveView('informes-facturacion-cliente')} 
+                                    isActive={activeView === 'informes-facturacion-cliente'}>
+                                        <Contact />
+                                        <span>Cliente</span>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            </SidebarMenuSub>
+                        )}
+                    </SidebarMenuItem>
                     <SidebarMenuSubItem>
                         <SidebarMenuSubButton 
                         onClick={() => setActiveView('informes-cobranzas')} 
