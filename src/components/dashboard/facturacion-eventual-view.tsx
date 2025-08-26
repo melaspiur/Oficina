@@ -53,7 +53,7 @@ const formSchema = z.object({
 type FormSchema = z.infer<typeof formSchema>
 
 const formatNumber = (value: number) => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('es-AR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
@@ -64,7 +64,7 @@ export function FacturacionEventualView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
   const [novedades, setNovedades] = React.useState<NovedadWithId[]>([])
   const [config, setConfig] = React.useState<ConfiguracionComprobantes | null>(null)
-  const [displayImporte, setDisplayImporte] = React.useState("0.00");
+  const [displayImporte, setDisplayImporte] = React.useState("0,00");
 
   const { toast } = useToast()
 
@@ -122,7 +122,7 @@ export function FacturacionEventualView() {
 
   const handleImporteFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     const value = form.getValues('importe');
-    setDisplayImporte(String(value || ''));
+    setDisplayImporte(String(value || '').replace('.', ','));
   };
 
   const handleImporteBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -130,7 +130,7 @@ export function FacturacionEventualView() {
     if (value) {
       setDisplayImporte(formatNumber(value));
     } else {
-      setDisplayImporte("0.00");
+      setDisplayImporte("0,00");
     }
   };
 
@@ -183,7 +183,7 @@ export function FacturacionEventualView() {
             novedadId: undefined,
             fecha: "",
         });
-        setDisplayImporte("0.00");
+        setDisplayImporte("0,00");
 
     } catch (error) {
       console.error("Error al generar facturación:", error)
