@@ -7,8 +7,8 @@ import { FacturacionEventualView } from "./facturacion-eventual-view"
 
 export function FacturacionView() {
     return (
-        <div className="p-6">
-            <Tabs defaultValue="mensual">
+        <div>
+            <Tabs defaultValue="mensual" className="p-6">
                 <TabsList className="grid w-full grid-cols-2 max-w-lg">
                     <TabsTrigger value="mensual">Facturación Mensual</TabsTrigger>
                     <TabsTrigger value="eventual">Facturación Eventual</TabsTrigger>
@@ -23,3 +23,5 @@ export function FacturacionView() {
         </div>
     )
 }
+
+    

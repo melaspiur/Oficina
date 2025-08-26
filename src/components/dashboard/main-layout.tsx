@@ -48,10 +48,9 @@ import { getAuth, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
-import { FacturacionMensualView } from './facturacion-mensual-view';
-import { FacturacionEventualView } from './facturacion-eventual-view';
+import { FacturacionView } from './facturacion-view';
 import { AsignacionView } from './asignacion-view';
-import { ImportacionView } from './importacion-view';
+import { CobranzaView } from './cobranza-view';
 import { ComprobantesView } from './comprobantes-view';
 import { InformeFacturacionMensualView } from './informe-facturacion-mensual-view';
 import { InformeFacturacionClienteView } from './informe-facturacion-cliente-view';
@@ -92,12 +91,10 @@ export function MainLayout() {
         return <NovedadesView />;
       case 'clientes-asignaciones':
         return <AsignacionView />;
-      case 'facturacion-mensual':
-        return <FacturacionMensualView />;
-      case 'facturacion-eventual':
-        return <FacturacionEventualView />;
-      case 'cobranza':
-        return <ImportacionView />;
+      case 'facturacion':
+        return <FacturacionView />;
+      case 'cobranzas':
+        return <CobranzaView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
       case 'informes-facturacion-mensual':
@@ -119,10 +116,8 @@ export function MainLayout() {
        if (activeView === 'clientes-asignaciones') return "Asignaciones";
       return title.charAt(0).toUpperCase() + title.slice(1);
     }
-     if (activeView.startsWith('facturacion-')) {
-        const title = activeView.split('-')[1];
-        if (activeView === 'facturacion-mensual') return "Factura Mensual";
-        if (activeView === 'facturacion-eventual') return "Factura Eventual";
+     if (activeView === 'facturacion') {
+        return "Facturación";
      }
       if (activeView.startsWith('ajustes-')) {
         const title = activeView.split('-')[1];
@@ -134,8 +129,8 @@ export function MainLayout() {
         if (activeView === 'informes-cobranzas') return "Informe de Cobranzas";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
      }
-     if (activeView === 'cobranza') {
-      return "Cobranza";
+     if (activeView === 'cobranzas') {
+      return "Cobranzas";
     }
      const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
      return viewName;
@@ -201,43 +196,18 @@ export function MainLayout() {
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton
-                    onClick={() => setIsFacturacionOpen(!isFacturacionOpen)}
-                    isActive={activeView.startsWith('facturacion-')}
+                    onClick={() => setActiveView('facturacion')}
+                    isActive={activeView === 'facturacion'}
                     tooltip="Facturación"
                 >
                     <FileText />
                     <span>Facturación</span>
-                    <ChevronDown
-                    className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
-                        isFacturacionOpen ? 'rotate-180' : ''
-                    }`}
-                    />
               </SidebarMenuButton>
-              {isFacturacionOpen && (
-                <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                        onClick={() => setActiveView('facturacion-mensual')} 
-                        isActive={activeView === 'facturacion-mensual'}>
-                        <FileClock />
-                        <span>Factura Mensual</span>
-                        </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                        onClick={() => setActiveView('facturacion-eventual')} 
-                        isActive={activeView === 'facturacion-eventual'}>
-                        <FileText />
-                        <span>Factura Eventual</span>
-                        </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                </SidebarMenuSub>
-              )}
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('cobranza')} isActive={activeView === 'cobranza'} tooltip="Cobranza">
+              <SidebarMenuButton onClick={() => setActiveView('cobranzas')} isActive={activeView === 'cobranzas'} tooltip="Cobranzas">
                 <DollarSign />
-                <span>Cobranza</span>
+                <span>Cobranzas</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
@@ -371,3 +341,5 @@ export function MainLayout() {
     </SidebarProvider>
   );
 }
+
+    

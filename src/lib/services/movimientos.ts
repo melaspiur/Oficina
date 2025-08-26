@@ -84,3 +84,24 @@ export async function getMovimientosFacturasPorCliente(clienteId: string): Promi
 
   return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
 }
+
+/**
+ * Fetches all 'RE' (Recibo) movements for a specific client.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an array of MovimientoWithId.
+ */
+export async function getMovimientosRecibosPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+  if (!clienteId) return [];
+
+  const q = query(
+    movimientosCollection,
+    where("comprobante", "==", "RE"),
+    where("clienteId", "==", clienteId)
+  );
+  
+  const snapshot = await getDocs(q);
+
+  return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
+}
+
+    
