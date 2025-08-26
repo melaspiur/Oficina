@@ -15,7 +15,7 @@ import { getNovedades, type NovedadWithId } from '@/lib/services/novedades';
 import { getAsignaciones, type AsignacionWithId } from '@/lib/services/asignaciones';
 
 // Esquema de entrada
-export const GenerarFacturacionInputSchema = z.object({
+const GenerarFacturacionInputSchema = z.object({
   mes: z.string().describe('El mes para el cual generar la facturación (e.g., "enero").'),
   fechaFacturacion: z.string().describe('La fecha de la factura en formato ISO.')
 });
@@ -38,7 +38,7 @@ const ClienteFacturadoSchema = z.object({
   totalFacturado: z.number(),
 });
 
-export const GenerarFacturacionOutputSchema = z.object({
+const GenerarFacturacionOutputSchema = z.object({
   mes: z.string(),
   fechaFacturacion: z.string(),
   clientes: z.array(ClienteFacturadoSchema),
