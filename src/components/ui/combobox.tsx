@@ -45,7 +45,9 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  const selectedOption = options.find((option) => option.value === value)
+  const selectedLabel = React.useMemo(() => {
+    return options.find((option) => option.value === value)?.label
+  }, [options, value])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -57,8 +59,8 @@ export function Combobox({
           className="w-full justify-between"
           disabled={disabled}
         >
-          {selectedOption
-            ? selectedOption.label
+          {selectedLabel
+            ? selectedLabel
             : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -72,14 +74,10 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onValueChange(option.value === value ? null : option.value)
+                  value={option.value}
+                  onSelect={(currentValue) => {
+                    onValueChange(currentValue === value ? null : currentValue)
                     setOpen(false)
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
                   }}
                 >
                   <Check
