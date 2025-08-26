@@ -108,11 +108,11 @@ export async function getMovimientosPendientesPorCliente(clienteId: string): Pro
     const movimientosCliente = await getMovimientosPorCliente(clienteId);
 
     const facturasPendientes = movimientosCliente
-        .filter(mov => mov.comprobante === 'FC' && (mov.importe - mov.aplicacion) > 0.001) // Check for a positive balance with a tolerance
+        .filter(mov => mov.comprobante === 'FC' && (mov.importe - mov.aplicacion) > 0.01) // Check for a positive balance with a tolerance
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
     const recibosPendientes = movimientosCliente
-        .filter(mov => mov.comprobante === 'RE' && (mov.importe - mov.aplicacion) > 0.001) // Check for a positive balance with a tolerance
+        .filter(mov => mov.comprobante === 'RE' && (mov.importe - mov.aplicacion) > 0.01) // Check for a positive balance with a tolerance
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
     return {
