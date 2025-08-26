@@ -19,8 +19,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { generarFacturacion } from "@/ai/flows/generar-facturacion-flow"
-import { mesesList, type FacturacionResult, type Movimiento } from "@/lib/types"
-import { updateConfiguracionComprobantes } from "@/lib/services/configuracion"
+import { mesesList, type FacturacionResult, type Movimiento, type ConfiguracionComprobantes } from "@/lib/types"
+import { getConfiguracionComprobantes, updateConfiguracionComprobantes } from "@/lib/services/configuracion"
 import { addMovimientosBatch } from "@/lib/services/movimientos"
 
 const formSchema = z.object({
@@ -35,6 +35,7 @@ type FormSchema = z.infer<typeof formSchema>
 export function FacturacionMensualView() {
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [facturacionResult, setFacturacionResult] = React.useState<FacturacionResult | null>(null)
+  const [config, setConfig] = React.useState<ConfiguracionComprobantes | null>(null);
   const { toast } = useToast()
 
   const form = useForm<FormSchema>({
@@ -44,12 +45,38 @@ export function FacturacionMensualView() {
     }
   })
 
+  React.useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const configData = await getConfiguracionComprobantes();
+        setConfig(configData);
+      } catch (error) {
+         console.error("Error fetching config:", error);
+         toast({
+          title: "Error de Configuración",
+          description: "No se pudo cargar la configuración de facturación.",
+          variant: "destructive",
+        });
+      }
+    }
+    fetchConfig();
+  }, [toast]);
+
   const onSubmit = async (data: FormSchema) => {
+    const mesSeleccionado = mesesList[Number(data.mes) - 1];
+
+    if (config && config.ultimoMesEventual === mesSeleccionado) {
+      toast({
+        title: "Mes ya Facturado",
+        description: `El mes de ${mesSeleccionado} ya ha sido procesado. No se puede facturar de nuevo.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true)
     setFacturacionResult(null)
     
-    const mesSeleccionado = mesesList[Number(data.mes) - 1];
-
     try {
       const result = await generarFacturacion({ 
         mes: mesSeleccionado,
@@ -99,10 +126,14 @@ export function FacturacionMensualView() {
         await addMovimientosBatch(movimientos);
 
         // 3. Update the last invoice number and last billed month in config
-        await updateConfiguracionComprobantes({ 
+        const newConfig = { 
+            ...config,
             ultimoFactura: facturacionResult.ultimoNumeroFactura,
             ultimoMesEventual: mesFacturado
-        });
+        };
+
+        // @ts-ignore
+        await updateConfiguracionComprobantes(newConfig);
         
         console.log("Facturación aceptada y movimientos creados:", facturacionResult);
         toast({
@@ -110,6 +141,7 @@ export function FacturacionMensualView() {
             description: "La facturación ha sido aceptada, los movimientos han sido registrados y la configuración actualizada.",
         });
         
+        setConfig(newConfig as ConfiguracionComprobantes);
         setFacturacionResult(null);
         form.reset();
     } catch (error) {
@@ -273,8 +305,8 @@ export function FacturacionMensualView() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isProcessing}>
-                {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full" disabled={isProcessing || !config}>
+                {(isProcessing || !config) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Generar Facturación
               </Button>
             </form>
@@ -284,3 +316,5 @@ export function FacturacionMensualView() {
     </div>
   )
 }
+
+    
