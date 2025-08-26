@@ -31,6 +31,7 @@ import {
   ClipboardList,
   Upload,
   UserCheck,
+  FileClock,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -38,7 +39,7 @@ import { getAuth, signOut } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
-import { FacturacionView } from './facturacion-view';
+import { FacturacionMensualView } from './facturacion-mensual-view';
 import { AsignacionIndividualView } from './asignacion-individual-view';
 import { AsignacionClienteView } from './asignacion-cliente-view';
 import { ImportacionView } from './importacion-view';
@@ -54,6 +55,7 @@ const PlaceholderView = ({ title }: { title: string }) => (
 export function MainLayout() {
   const [activeView, setActiveView] = React.useState('clientes-cliente');
   const [isClientesOpen, setIsClientesOpen] = React.useState(true);
+  const [isFacturacionOpen, setIsFacturacionOpen] = React.useState(false);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -76,8 +78,10 @@ export function MainLayout() {
         return <AsignacionIndividualView />;
        case 'clientes-asignacion-cliente':
         return <AsignacionClienteView />;
-      case 'facturacion':
-        return <FacturacionView />;
+      case 'facturacion-mensual':
+        return <FacturacionMensualView />;
+      case 'facturacion-eventual':
+        return <PlaceholderView title="Factura Eventual" />;
       case 'importacion':
         return <ImportacionView />;
       case 'informes':
@@ -96,6 +100,11 @@ export function MainLayout() {
       if (activeView === 'clientes-asignacion-cliente') return "Asignación por Cliente";
       return title.charAt(0).toUpperCase() + title.slice(1);
     }
+     if (activeView.startsWith('facturacion-')) {
+        const title = activeView.split('-')[1];
+        if (activeView === 'facturacion-mensual') return "Factura Mensual";
+        if (activeView === 'facturacion-eventual') return "Factura Eventual";
+     }
      if (activeView === 'importacion') {
       return "Importación y Asignación Masiva";
     }
@@ -170,10 +179,39 @@ export function MainLayout() {
               )}
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => setActiveView('facturacion')} isActive={activeView === 'facturacion'} tooltip="Facturación">
-                <FileText />
-                <span>Facturación</span>
+                <SidebarMenuButton
+                    onClick={() => setIsFacturacionOpen(!isFacturacionOpen)}
+                    isActive={activeView.startsWith('facturacion-')}
+                    tooltip="Facturación"
+                >
+                    <FileText />
+                    <span>Facturación</span>
+                    <ChevronDown
+                    className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                        isFacturacionOpen ? 'rotate-180' : ''
+                    }`}
+                    />
               </SidebarMenuButton>
+              {isFacturacionOpen && (
+                <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('facturacion-mensual')} 
+                        isActive={activeView === 'facturacion-mensual'}>
+                        <FileClock />
+                        <span>Factura Mensual</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('facturacion-eventual')} 
+                        isActive={activeView === 'facturacion-eventual'}>
+                        <FileText />
+                        <span>Factura Eventual</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton onClick={() => setActiveView('importacion')} isActive={activeView === 'importacion'} tooltip="Importación">
@@ -227,5 +265,3 @@ export function MainLayout() {
     </SidebarProvider>
   );
 }
-
-    

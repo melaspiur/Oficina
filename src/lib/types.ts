@@ -1,3 +1,4 @@
+
 export type Task = {
   id: string;
   text: string;
@@ -32,7 +33,6 @@ export type Cliente = {
   cuit: string;
   tipo: 'inscripto' | 'monotributo';
   categoria: 1 | 2 | 3 | 4 | 5;
-  // serviciosAsignados is now removed from here.
 };
 
 export type ClienteWithId = Cliente & { id: string };
@@ -51,6 +51,11 @@ export type Meses = {
   noviembre: boolean;
   diciembre: boolean;
 };
+
+export const mesesList: (keyof Meses)[] = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+];
 
 export type Novedad = {
   codigo: number;
