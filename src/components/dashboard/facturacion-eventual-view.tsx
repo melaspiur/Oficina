@@ -52,11 +52,20 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>
 
+const formatNumber = (value: number) => {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
 export function FacturacionEventualView() {
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
   const [novedades, setNovedades] = React.useState<NovedadWithId[]>([])
   const [config, setConfig] = React.useState<ConfiguracionComprobantes | null>(null)
+  const [displayImporte, setDisplayImporte] = React.useState("0.00");
+
   const { toast } = useToast()
 
   const form = useForm<FormSchema>({
@@ -111,6 +120,20 @@ export function FacturacionEventualView() {
     form.setValue('fecha', value, { shouldValidate: true });
   };
 
+  const handleImporteFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = form.getValues('importe');
+    setDisplayImporte(String(value || ''));
+  };
+
+  const handleImporteBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = form.getValues('importe');
+    if (value) {
+      setDisplayImporte(formatNumber(value));
+    } else {
+      setDisplayImporte("0.00");
+    }
+  };
+
 
   const onSubmit = async (data: FormSchema) => {
     if (!config) {
@@ -160,6 +183,7 @@ export function FacturacionEventualView() {
             novedadId: undefined,
             fecha: "",
         });
+        setDisplayImporte("0.00");
 
     } catch (error) {
       console.error("Error al generar facturación:", error)
@@ -270,7 +294,19 @@ export function FacturacionEventualView() {
                       <FormItem>
                         <FormLabel>Importe *</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} />
+                          <Input 
+                            type="text" 
+                            inputMode="decimal"
+                            value={displayImporte}
+                            onFocus={handleImporteFocus}
+                            onBlur={handleImporteBlur}
+                            onChange={(e) => {
+                                const rawValue = e.target.value;
+                                setDisplayImporte(rawValue);
+                                const parsedValue = parseFloat(rawValue.replace(',', '.'));
+                                field.onChange(isNaN(parsedValue) ? 0 : parsedValue);
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
