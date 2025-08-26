@@ -45,10 +45,6 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  const selectedLabel = React.useMemo(() => {
-    return options.find((option) => option.value === value)?.label
-  }, [options, value])
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -68,15 +64,15 @@ export function Combobox({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            <CommandEmpty>{notFoundMessage}</CommandEmpty>
-            <CommandGroup>
+          <CommandEmpty>{notFoundMessage}</CommandEmpty>
+          <CommandGroup>
+             <CommandList>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? null : currentValue)
+                  value={option.label}
+                  onSelect={() => {
+                    onValueChange(option.value === value ? null : option.value)
                     setOpen(false)
                   }}
                 >
@@ -89,8 +85,8 @@ export function Combobox({
                   {option.label}
                 </CommandItem>
               ))}
-            </CommandGroup>
-          </CommandList>
+            </CommandList>
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>
