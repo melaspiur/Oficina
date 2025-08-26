@@ -19,7 +19,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { generarFacturacion, GenerarFacturacionOutput } from "@/ai/flows/generar-facturacion-flow"
-import { mesesList } from "@/lib/types"
+import { mesesList, FacturacionResult, NovedadFacturada } from "@/lib/types"
+import { updateConfiguracionComprobantes } from "@/lib/services/configuracion"
 
 const formSchema = z.object({
   mes: z.string().min(1, "Debe seleccionar un mes."),
@@ -32,7 +33,7 @@ type FormSchema = z.infer<typeof formSchema>
 
 export function FacturacionMensualView() {
   const [isProcessing, setIsProcessing] = React.useState(false)
-  const [facturacionResult, setFacturacionResult] = React.useState<GenerarFacturacionOutput | null>(null)
+  const [facturacionResult, setFacturacionResult] = React.useState<FacturacionResult | null>(null)
   const { toast } = useToast()
 
   const form = useForm<FormSchema>({
@@ -56,7 +57,7 @@ export function FacturacionMensualView() {
       setFacturacionResult(result);
        toast({
         title: "Facturación Generada",
-        description: `Se procesaron ${result.clientes.length} clientes para el mes de ${mesSeleccionado}.`,
+        description: `Se procesaron ${result.clientes.reduce((acc, c) => acc + c.novedades.length, 0)} facturas para ${result.clientes.length} clientes.`,
       });
     } catch (error) {
       console.error("Error al generar facturación:", error)
@@ -70,14 +71,25 @@ export function FacturacionMensualView() {
     }
   }
 
-  const handleAceptarFacturacion = () => {
-    console.log("Facturación aceptada:", facturacionResult);
-    toast({
-        title: "Proceso Completado",
-        description: "La facturación ha sido aceptada y guardada.",
-      });
-    setFacturacionResult(null);
-    form.reset();
+  const handleAceptarFacturacion = async () => {
+    if (!facturacionResult) return;
+    try {
+        await updateConfiguracionComprobantes({ ultimoFactura: facturacionResult.ultimoNumeroFactura });
+        console.log("Facturación aceptada:", facturacionResult);
+        toast({
+            title: "Proceso Completado",
+            description: "La facturación ha sido aceptada y el número de factura actualizado.",
+        });
+        setFacturacionResult(null);
+        form.reset();
+    } catch (error) {
+        console.error("Error al aceptar facturación:", error);
+        toast({
+            title: "Error",
+            description: "No se pudo actualizar la configuración de comprobantes.",
+            variant: "destructive",
+        });
+    }
   }
   
   const formatCurrency = (value: number) => {
@@ -108,27 +120,32 @@ export function FacturacionMensualView() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Cód. Cliente / Novedad</TableHead>
-                                <TableHead>Nombre</TableHead>
+                                <TableHead>Cód. Cliente</TableHead>
+                                <TableHead>Nombre Cliente</TableHead>
+                                <TableHead>Novedad</TableHead>
                                 <TableHead className="text-right">Cantidad</TableHead>
                                 <TableHead className="text-right">Importe</TableHead>
+                                <TableHead className="text-right">Nro. Factura</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {facturacionResult.clientes.map(cliente => (
                                 <React.Fragment key={cliente.clienteId}>
-                                    <TableRow className="bg-secondary hover:bg-secondary">
+                                    <TableRow className="bg-secondary hover:bg-secondary pointer-events-none">
                                         <TableCell className="font-bold">{cliente.clienteCodigo}</TableCell>
                                         <TableCell className="font-bold">{cliente.clienteNombre}</TableCell>
-                                        <TableCell></TableCell>
+                                        <TableCell colSpan={2}></TableCell>
                                         <TableCell className="text-right font-bold">{formatCurrency(cliente.totalFacturado)}</TableCell>
+                                        <TableCell></TableCell>
                                     </TableRow>
                                     {cliente.novedades.map(novedad => (
-                                        <TableRow key={novedad.novedadId} className="text-sm">
-                                            <TableCell className="pl-8">{novedad.novedadCodigo}</TableCell>
-                                            <TableCell>{novedad.novedadNombre}</TableCell>
+                                        <TableRow key={novedad.novedadId + novedad.numeroFactura} className="text-sm">
+                                            <TableCell></TableCell>
+                                            <TableCell></TableCell>
+                                            <TableCell className="pl-4">{`${novedad.novedadCodigo} - ${novedad.novedadNombre}`}</TableCell>
                                             <TableCell className="text-right">{novedad.cantidad.toFixed(2)}</TableCell>
                                             <TableCell className="text-right">{formatCurrency(novedad.importe)}</TableCell>
+                                            <TableCell className="text-right font-mono">{String(novedad.numeroFactura).padStart(8, '0')}</TableCell>
                                         </TableRow>
                                     ))}
                                 </React.Fragment>
@@ -136,7 +153,7 @@ export function FacturacionMensualView() {
                         </TableBody>
                         <TableFooter>
                             <TableRow>
-                                <TableCell colSpan={3} className="text-right text-lg font-bold">Total General Facturado</TableCell>
+                                <TableCell colSpan={5} className="text-right text-lg font-bold">Total General Facturado</TableCell>
                                 <TableCell className="text-right text-lg font-bold">{formatCurrency(facturacionResult.totalGeneral)}</TableCell>
                             </TableRow>
                         </TableFooter>

@@ -81,3 +81,31 @@ export type ConfiguracionComprobantes = {
   ultimoRecibo: number;
   ultimoFactura: number;
 };
+
+
+// Types for Billing Flow
+export type NovedadFacturada = {
+  novedadId: string;
+  novedadCodigo: number;
+  novedadNombre: string;
+  cantidad: number;
+  importe: number;
+  numeroFactura: number;
+};
+
+export type ClienteFacturado = {
+  clienteId: string;
+  clienteCodigo: number;
+  clienteNombre: string;
+  novedades: NovedadFacturada[];
+  totalFacturado: number;
+};
+
+export type FacturacionResult = {
+  mes: string;
+  fechaFacturacion: string;
+  clientes: ClienteFacturado[];
+  totalGeneral: number;
+  ultimoNumeroFactura: number;
+};
+

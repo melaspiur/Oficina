@@ -13,6 +13,7 @@ import { z } from 'genkit';
 import { getClientes, type ClienteWithId } from '@/lib/services/clientes';
 import { getNovedades, type NovedadWithId } from '@/lib/services/novedades';
 import { getAsignaciones, type AsignacionWithId } from '@/lib/services/asignaciones';
+import { getConfiguracionComprobantes } from '@/lib/services/configuracion';
 
 // Esquema de entrada
 const GenerarFacturacionInputSchema = z.object({
@@ -28,6 +29,7 @@ const NovedadFacturadaSchema = z.object({
   novedadNombre: z.string(),
   cantidad: z.number(),
   importe: z.number(),
+  numeroFactura: z.number(),
 });
 
 const ClienteFacturadoSchema = z.object({
@@ -43,6 +45,7 @@ const GenerarFacturacionOutputSchema = z.object({
   fechaFacturacion: z.string(),
   clientes: z.array(ClienteFacturadoSchema),
   totalGeneral: z.number(),
+  ultimoNumeroFactura: z.number(),
 });
 export type GenerarFacturacionOutput = z.infer<typeof GenerarFacturacionOutputSchema>;
 
@@ -62,12 +65,15 @@ const generarFacturacionFlow = ai.defineFlow(
   async (input) => {
     const { mes, fechaFacturacion } = input;
     
-    // 1. Obtener todos los datos necesarios de la base de datos
-    const [clientes, novedades, asignaciones] = await Promise.all([
+    // 1. Obtener todos los datos necesarios
+    const [clientes, novedades, asignaciones, config] = await Promise.all([
       getClientes(),
       getNovedades(),
       getAsignaciones(),
+      getConfiguracionComprobantes(),
     ]);
+
+    let ultimoNumeroFactura = config.ultimoFactura;
 
     const clientesMap = new Map(clientes.map(c => [c.id, c]));
     const novedadesMap = new Map(novedades.map(n => [n.id, n]));
@@ -90,12 +96,14 @@ const generarFacturacionFlow = ai.defineFlow(
         
         const clienteEntry = facturacionPorCliente.get(asignacion.clienteId);
         if (clienteEntry) {
+            ultimoNumeroFactura++;
             clienteEntry.novedades.push({
                 novedadId: novedad.id,
                 novedadCodigo: novedad.codigo,
                 novedadNombre: novedad.nombre,
                 cantidad: asignacion.cantidad,
                 importe: asignacion.cantidad * novedad.importe,
+                numeroFactura: ultimoNumeroFactura,
             });
         }
       }
@@ -123,6 +131,7 @@ const generarFacturacionFlow = ai.defineFlow(
       fechaFacturacion,
       clientes: clientesFacturados.sort((a,b) => a.clienteCodigo - b.clienteCodigo),
       totalGeneral,
+      ultimoNumeroFactura: ultimoNumeroFactura,
     };
   }
 );
