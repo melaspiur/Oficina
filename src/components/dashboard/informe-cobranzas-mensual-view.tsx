@@ -10,7 +10,7 @@ import { es } from "date-fns/locale"
 import { Loader2, FileDown } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import Papa from "papaparse"
+import * as XLSX from "xlsx"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -119,31 +119,45 @@ export function InformeCobranzasMensualView() {
 
   const anosOptions = Array.from({ length: 10 }, (_, i) => String(currentYear - i));
 
-  const handleExportCSV = () => {
+  const handleExportExcel = () => {
     const { mes, ano } = form.getValues();
     const mesLabel = mesesOptions.find(m => m.value === mes)?.label;
-    const fileName = `Cobranzas_${mesLabel}_${ano}.csv`;
+    const fileName = `Cobranzas_${mesLabel}_${ano}.xlsx`;
 
-    const dataForCsv = reportData.map(item => ({
+    const dataForSheet = reportData.map(item => ({
         Fecha: format(new Date(item.fecha), 'dd/MM/yyyy'),
         Numero: `${item.comprobante}-${String(item.numero).padStart(8, '0')}`,
         Cliente: item.clienteNombre,
         Descripcion: item.descripcion,
-        Importe: item.importe.toFixed(2),
+        Importe: item.importe,
     }));
+    
+    dataForSheet.push({
+        Fecha: '',
+        Numero: '',
+        Cliente: '',
+        Descripcion: 'Total General',
+        Importe: totalCobrado
+    });
 
-    const csv = Papa.unparse(dataForCsv);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+
+    worksheet['!cols'] = [
+        { wch: 12 }, // Fecha
+        { wch: 15 }, // Numero
+        { wch: 30 }, // Cliente
+        { wch: 40 }, // Descripcion
+        { wch: 15 }, // Importe
+    ];
+
+    dataForSheet.forEach((_row, index) => {
+        const i = index + 2;
+        if(worksheet[`E${i}`]) worksheet[`E${i}`].z = '$ #,##0.00';
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Cobranzas Mensual");
+    XLSX.writeFile(workbook, fileName);
   };
 
   const handleExportPDF = () => {
@@ -259,9 +273,9 @@ export function InformeCobranzasMensualView() {
                     </div>
                      {reportData.length > 0 && (
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                            <Button variant="outline" size="sm" onClick={handleExportExcel}>
                                 <FileDown className="mr-2 h-4 w-4" />
-                                Exportar a CSV
+                                Exportar a Excel
                             </Button>
                             <Button variant="outline" size="sm" onClick={handleExportPDF}>
                                <FileDown className="mr-2 h-4 w-4" />

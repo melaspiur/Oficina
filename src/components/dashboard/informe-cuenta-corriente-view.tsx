@@ -6,7 +6,7 @@ import { format } from "date-fns"
 import { Loader2, FileDown } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import Papa from "papaparse"
+import * as XLSX from "xlsx"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -116,31 +116,53 @@ export function InformeCuentaCorrienteView() {
 
   const finalBalance = reportData.length > 0 ? reportData[reportData.length - 1].saldo : 0;
   
-  const handleExportCSV = () => {
+  const handleExportExcel = () => {
     if (!selectedCliente) return;
-    const fileName = `CuentaCorriente_${selectedCliente.nombre.replace(/\s+/g, '_')}.csv`;
+    const fileName = `CuentaCorriente_${selectedCliente.nombre.replace(/\s+/g, '_')}.xlsx`;
 
-    const dataForCsv = reportData.map(item => ({
+    const dataForSheet = reportData.map(item => ({
         Fecha: format(new Date(item.fecha), 'dd/MM/yyyy'),
         Comprobante: `${item.comprobante}-${String(item.numero).padStart(8, '0')}`,
         Descripcion: item.descripcion,
-        Debe: item.debe.toFixed(2),
-        Haber: item.haber.toFixed(2),
-        Saldo: item.saldo.toFixed(2),
+        Debe: item.debe,
+        Haber: item.haber,
+        Saldo: item.saldo,
     }));
+    
+    // Add total row
+    dataForSheet.push({
+      Fecha: '',
+      Comprobante: '',
+      Descripcion: 'Saldo Final',
+      Debe: undefined,
+      Haber: undefined,
+      Saldo: finalBalance
+    });
 
-    const csv = Papa.unparse(dataForCsv);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    if (link.download !== undefined) {
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", fileName);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+        { wch: 12 }, // Fecha
+        { wch: 15 }, // Comprobante
+        { wch: 40 }, // Descripcion
+        { wch: 15 }, // Debe
+        { wch: 15 }, // Haber
+        { wch: 15 }, // Saldo
+    ];
+
+    // Format currency columns
+    dataForSheet.forEach((_row, index) => {
+        const i = index + 2; // XLSX rows are 1-based, and we have a header
+        if(worksheet[`D${i}`]) worksheet[`D${i}`].z = '$ #,##0.00';
+        if(worksheet[`E${i}`]) worksheet[`E${i}`].z = '$ #,##0.00';
+        if(worksheet[`F${i}`]) worksheet[`F${i}`].z = '$ #,##0.00';
+    });
+
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Cuenta Corriente");
+    XLSX.writeFile(workbook, fileName);
   };
 
   const handleExportPDF = () => {
@@ -219,7 +241,7 @@ export function InformeCuentaCorrienteView() {
                     </div>
                      {reportData.length > 0 && !isProcessing && (
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                            <Button variant="outline" size="sm" onClick={handleExportExcel}>
                                 <FileDown className="mr-2 h-4 w-4" />
                                 Exportar a Excel
                             </Button>
