@@ -126,6 +126,29 @@ export async function getMovimientosPorCliente(clienteId: string): Promise<Movim
 }
 
 /**
+ * Fetches all movements for a specific client within the last year.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an array of all movements for the client from the last year.
+ */
+export async function getMovimientosPorClienteLastYear(clienteId: string): Promise<MovimientoWithId[]> {
+    if (!clienteId) return [];
+
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const oneYearAgoISO = oneYearAgo.toISOString();
+
+    const q = query(
+        movimientosCollection,
+        where("clienteId", "==", clienteId),
+        where("fecha", ">=", oneYearAgoISO)
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
+}
+
+
+/**
  * Fetches all pending movements (invoices and receipts with a balance) for a specific client.
  * @param clienteId The ID of the client.
  * @returns A promise that resolves to an object with pending invoices and receipts.

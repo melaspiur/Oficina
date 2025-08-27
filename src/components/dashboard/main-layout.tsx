@@ -54,6 +54,7 @@ import { ModificarReciboView } from './modificar-recibo-view';
 import { AplicarReciboView } from './aplicar-recibo-view';
 import { InformeCobranzasMensualView } from './informe-cobranzas-mensual-view';
 import { InformeCobranzasClienteView } from './informe-cobranzas-cliente-view';
+import { InformeCuentaCorrienteView } from './informe-cuenta-corriente-view';
 
 
 // Vistas dinámicas
@@ -112,7 +113,7 @@ export function MainLayout() {
       case 'informes-cobranzas-cliente':
         return <InformeCobranzasClienteView />;
       case 'informes-cuenta-corriente':
-        return <PlaceholderView title="Informe de Cuenta Corriente" />;
+        return <InformeCuentaCorrienteView />;
       default:
         return <ClientesView />;
     }
