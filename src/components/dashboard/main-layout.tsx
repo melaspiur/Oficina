@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -135,10 +136,10 @@ export function MainLayout() {
             <div className="relative w-full h-full max-w-5xl aspect-video rounded-lg overflow-hidden shadow-2xl">
                  <Image 
                     src="https://picsum.photos/1200/800" 
-                    alt="Oficina moderna" 
+                    alt="Escritorio profesional" 
                     fill
                     style={{ objectFit: 'cover' }}
-                    data-ai-hint="modern office"
+                    data-ai-hint="professional desk"
                     priority
                   />
             </div>
