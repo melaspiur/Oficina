@@ -82,9 +82,15 @@ export function ReciboDialog({ isOpen, onOpenChange, onSave, recibo, cliente }: 
             descripcion: recibo.descripcion || "",
             importe: recibo.importe
         });
-        setDisplayImporte(formatNumber(recibo.importe));
     }
   }, [isOpen, recibo, form]);
+
+  React.useEffect(() => {
+    if (recibo) {
+      setDisplayImporte(formatNumber(recibo.importe));
+    }
+  }, [recibo]);
+
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, ''); // Remove all non-digit characters
