@@ -38,14 +38,12 @@ export function Combobox({
     options, 
     value, 
     onValueChange, 
-    placeholder, 
-    searchPlaceholder, 
-    notFoundMessage, 
+    placeholder = "Select an option", 
+    searchPlaceholder = "Search...", 
+    notFoundMessage = "No results found.", 
     disabled = false 
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-
-  const selectedLabel = options.find((option) => option.value === value)?.label
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -58,7 +56,9 @@ export function Combobox({
           disabled={disabled}
         >
           <span className="truncate">
-            {value ? selectedLabel : placeholder}
+            {value
+              ? options.find((option) => option.value === value)?.label
+              : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -72,9 +72,12 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onValueChange(option.value === value ? "" : option.value)
+                  value={option.label} 
+                  onSelect={(currentValue) => {
+                    const selectedOption = options.find(opt => opt.label.toLowerCase() === currentValue.toLowerCase());
+                    if (selectedOption) {
+                      onValueChange(selectedOption.value === value ? "" : selectedOption.value)
+                    }
                     setOpen(false)
                   }}
                 >
