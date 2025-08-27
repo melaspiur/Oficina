@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from 'react';
+import Image from 'next/image';
 import {
   SidebarProvider,
   Sidebar,
@@ -72,8 +73,8 @@ import { DesaplicarReciboView } from './desaplicar-recibo-view';
 import { ModificarFacturaView } from './modificar-factura-view';
 
 export function MainLayout() {
-  const [activeView, setActiveView] = React.useState('clientes-cliente');
-  const [isClientesOpen, setIsClientesOpen] = React.useState(true);
+  const [activeView, setActiveView] = React.useState('home');
+  const [isClientesOpen, setIsClientesOpen] = React.useState(false);
   const [isFacturacionOpen, setIsFacturacionOpen] = React.useState(false);
   const [isCobranzasOpen, setIsCobranzasOpen] = React.useState(false);
   const [isAjustesOpen, setIsAjustesOpen] = React.useState(false);
@@ -107,6 +108,17 @@ export function MainLayout() {
     }
   };
 
+  const handleGoHome = () => {
+    setActiveView('home');
+    setIsClientesOpen(false);
+    setIsFacturacionOpen(false);
+    setIsCobranzasOpen(false);
+    setIsAjustesOpen(false);
+    setIsInformesOpen(false);
+    setIsFacturacionInformeOpen(false);
+    setIsCobranzasInformeOpen(false);
+  }
+
   if (isLoadingAuth) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -117,6 +129,21 @@ export function MainLayout() {
 
   const renderContent = () => {
     switch (activeView) {
+      case 'home':
+        return (
+          <div className="w-full h-full flex items-center justify-center p-6">
+            <div className="relative w-full h-full max-w-5xl aspect-video rounded-lg overflow-hidden shadow-2xl">
+                 <Image 
+                    src="https://picsum.photos/1200/800" 
+                    alt="Oficina moderna" 
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    data-ai-hint="modern office"
+                    priority
+                  />
+            </div>
+          </div>
+        );
       case 'clientes-cliente':
         return <ClientesView />;
       case 'clientes-novedades':
@@ -155,6 +182,9 @@ export function MainLayout() {
   };
 
   const getHeaderTitle = () => {
+     if (activeView === 'home') {
+        return "Inicio";
+    }
     if (activeView.startsWith('clientes-')) {
       const title = activeView.split('-')[1];
        if (activeView === 'clientes-asignaciones') return "Asignaciones";
@@ -190,14 +220,16 @@ export function MainLayout() {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="p-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <BotMessageSquare className="h-6 w-6 text-primary" />
-            </Button>
-            <h2 className="text-lg font-semibold tracking-tight font-headline">
-              Oficina Virtual
-            </h2>
-          </div>
+          <Button variant="ghost" className="h-auto p-0 justify-start" onClick={handleGoHome}>
+            <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center h-9 w-9">
+                    <BotMessageSquare className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-lg font-semibold tracking-tight font-headline">
+                  Oficina Virtual
+                </h2>
+            </div>
+          </Button>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
