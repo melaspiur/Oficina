@@ -6,11 +6,17 @@ import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 export interface ComboboxOption {
@@ -38,16 +44,11 @@ export function Combobox({
     disabled = false 
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState("")
 
-  const filteredOptions = React.useMemo(() => {
-    if (!search) return options
-    return options.filter(option =>
-      option.label.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [options, search])
-
-  const selectedLabel = options.find(option => option.value === value)?.label
+  const handleSelect = (currentValue: string) => {
+    onValueChange(currentValue === value ? "" : currentValue)
+    setOpen(false)
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -60,49 +61,37 @@ export function Combobox({
           disabled={disabled}
         >
           <span className="truncate">
-            {value ? selectedLabel : placeholder}
+            {value
+              ? options.find((option) => option.value === value)?.label
+              : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <div className="p-2">
-            <Input
-                placeholder={searchPlaceholder}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9"
-            />
-        </div>
-        <ScrollArea className="h-auto max-h-60">
-            <div className="p-2 pt-0">
-                {filteredOptions.length > 0 ? (
-                    filteredOptions.map((option) => (
-                        <Button
-                            key={option.value}
-                            variant="ghost"
-                            className="w-full justify-start font-normal"
-                            onClick={() => {
-                                onValueChange(option.value)
-                                setOpen(false)
-                            }}
-                        >
-                             <Check
-                                className={cn(
-                                "mr-2 h-4 w-4",
-                                value === option.value ? "opacity-100" : "opacity-0"
-                                )}
-                            />
-                            {option.label}
-                        </Button>
-                    ))
-                ) : (
-                    <div className="py-6 text-center text-sm">
-                        {notFoundMessage}
-                    </div>
-                )}
-            </div>
-        </ScrollArea>
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandEmpty>{notFoundMessage}</CommandEmpty>
+          <ScrollArea className="h-auto max-h-60">
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={handleSelect}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </ScrollArea>
+        </Command>
       </PopoverContent>
     </Popover>
   )
