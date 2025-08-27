@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase";
-import type { Aplicacion } from "@/lib/types";
-import { collection, writeBatch, doc, increment } from "firebase/firestore";
+import type { Aplicacion, AplicacionWithId } from "@/lib/types";
+import { collection, writeBatch, doc, increment, query, where, getDocs, deleteDoc } from "firebase/firestore";
 
 const aplicacionesCollection = collection(db, "aplicaciones");
 const movimientosCollection = collection(db, "movimientos");
@@ -40,6 +40,58 @@ export async function addAplicacionesBatch(aplicaciones: Aplicacion[]) {
         const reciboDocRef = doc(movimientosCollection, reciboId);
         // Increment the total applied amount on the receipt
         batch.update(reciboDocRef, { aplicacion: increment(totalAplicadoEnEsteLote) });
+    }
+
+    await batch.commit();
+}
+
+
+/**
+ * Fetches all application documents for a given receipt ID.
+ * @param reciboId The ID of the receipt.
+ * @returns A promise that resolves to an array of AplicacionWithId.
+ */
+export async function getAplicacionesPorRecibo(reciboId: string): Promise<AplicacionWithId[]> {
+    if (!reciboId) return [];
+
+    const q = query(aplicacionesCollection, where("reciboId", "==", reciboId));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({ ...(doc.data() as Aplicacion), id: doc.id }));
+}
+
+/**
+ * Deletes all applications related to a list of receipt IDs and reverses the applied amounts
+ * on both the receipts and the corresponding invoices in a single batch operation.
+ * @param reciboIds An array of receipt IDs to unapply.
+ */
+export async function deleteAplicacionesBatch(reciboIds: string[]) {
+    if (!reciboIds || reciboIds.length === 0) return;
+
+    const batch = writeBatch(db);
+
+    for (const reciboId of reciboIds) {
+        const aplicaciones = await getAplicacionesPorRecibo(reciboId);
+
+        if (aplicaciones.length > 0) {
+            let totalDesaplicadoDelRecibo = 0;
+
+            for (const aplicacion of aplicaciones) {
+                // 1. Decrement the 'aplicacion' on the invoice
+                const facturaDocRef = doc(movimientosCollection, aplicacion.facturaId);
+                batch.update(facturaDocRef, { aplicacion: increment(-aplicacion.importe) });
+
+                // 2. Delete the application document itself
+                const appDocRef = doc(aplicacionesCollection, aplicacion.id);
+                batch.delete(appDocRef);
+
+                totalDesaplicadoDelRecibo += aplicacion.importe;
+            }
+
+            // 3. Decrement the 'aplicacion' on the receipt
+            const reciboDocRef = doc(movimientosCollection, reciboId);
+            batch.update(reciboDocRef, { aplicacion: increment(-totalDesaplicadoDelRecibo) });
+        }
     }
 
     await batch.commit();

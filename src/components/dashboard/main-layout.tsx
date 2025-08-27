@@ -47,6 +47,7 @@ import {
   FileArchive,
   KeyRound,
   Loader2,
+  Undo2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -67,6 +68,7 @@ import { InformeCobranzasClienteView } from './informe-cobranzas-cliente-view';
 import { InformeCuentaCorrienteView } from './informe-cuenta-corriente-view';
 import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 import { ChangePasswordDialog } from './change-password-dialog';
+import { DesaplicarReciboView } from './desaplicar-recibo-view';
 
 export function MainLayout() {
   const [activeView, setActiveView] = React.useState('clientes-cliente');
@@ -128,6 +130,8 @@ export function MainLayout() {
         return <ModificarReciboView />;
       case 'cobranzas-aplicar-recibo':
         return <AplicarReciboView />;
+      case 'cobranzas-desaplicar-recibo':
+        return <DesaplicarReciboView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
       case 'informes-facturacion-mensual':
@@ -172,6 +176,7 @@ export function MainLayout() {
         if (activeView === 'cobranzas-generar-recibo') return "Generar Recibo";
         if (activeView === 'cobranzas-modificar-recibo') return "Modificar Recibo";
         if (activeView === 'cobranzas-aplicar-recibo') return "Aplicar Recibo";
+        if (activeView === 'cobranzas-desaplicar-recibo') return "Desaplicar Recibo";
      }
      const viewName = activeView.charAt(0).toUpperCase() + activeView.slice(1);
      return viewName;
@@ -282,6 +287,14 @@ export function MainLayout() {
                         isActive={activeView === 'cobranzas-aplicar-recibo'}>
                         <CheckSquare />
                         <span>Aplicar Recibo</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton 
+                        onClick={() => setActiveView('cobranzas-desaplicar-recibo')} 
+                        isActive={activeView === 'cobranzas-desaplicar-recibo'}>
+                        <Undo2 />
+                        <span>Desaplicar Recibo</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                  </SidebarMenuSub>
