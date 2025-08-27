@@ -73,7 +73,7 @@ export function FacturacionEventualView() {
      defaultValues: {
       importe: 0,
       descripcion: "",
-      fecha: "",
+      fecha: formatDate(new Date(), "dd/MM/yyyy"),
     }
   })
 
@@ -181,7 +181,7 @@ export function FacturacionEventualView() {
             descripcion: "",
             clienteId: undefined,
             novedadId: undefined,
-            fecha: "",
+            fecha: formatDate(new Date(), "dd/MM/yyyy"),
         });
         setDisplayImporte("0,00");
 
