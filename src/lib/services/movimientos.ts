@@ -207,3 +207,30 @@ export async function getMovimientosRecibosPorCliente(clienteId: string): Promis
 
   return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
 }
+
+
+/**
+ * Gets a list of unique client IDs who had movements in a given month and year.
+ * @param year The full year (e.g., 2024).
+ * @param month The month (1-12).
+ * @returns A promise that resolves to an array of unique client IDs.
+ */
+export async function getClientesConMovimientos(year: number, month: number): Promise<string[]> {
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 1);
+
+  const snapshot = await getDocs(movimientosCollection);
+  
+  const allMovements = snapshot.docs.map(doc => doc.data() as Movimiento);
+
+  const clientIds = new Set<string>();
+
+  allMovements.forEach(mov => {
+    const movDate = new Date(mov.fecha);
+    if (movDate >= startDate && movDate < endDate) {
+      clientIds.add(mov.clienteId);
+    }
+  });
+
+  return Array.from(clientIds);
+}

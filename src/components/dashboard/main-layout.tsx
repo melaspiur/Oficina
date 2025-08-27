@@ -37,6 +37,7 @@ import {
   Pencil,
   CheckSquare,
   FilePlus,
+  FileArchive,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -55,6 +56,7 @@ import { AplicarReciboView } from './aplicar-recibo-view';
 import { InformeCobranzasMensualView } from './informe-cobranzas-mensual-view';
 import { InformeCobranzasClienteView } from './informe-cobranzas-cliente-view';
 import { InformeCuentaCorrienteView } from './informe-cuenta-corriente-view';
+import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 
 
 // Vistas dinámicas
@@ -114,6 +116,8 @@ export function MainLayout() {
         return <InformeCobranzasClienteView />;
       case 'informes-cuenta-corriente':
         return <InformeCuentaCorrienteView />;
+      case 'informes-resumenes-pdf':
+        return <InformeResumenesPdfView />;
       default:
         return <ClientesView />;
     }
@@ -138,6 +142,7 @@ export function MainLayout() {
         if (activeView === 'informes-cobranzas-mensual') return "Informe de Cobranzas Mensual";
         if (activeView === 'informes-cobranzas-cliente') return "Informe de Cobranzas por Cliente";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
+        if (activeView === 'informes-resumenes-pdf') return "Resúmenes PDF";
      }
      if (activeView.startsWith('cobranzas-')) {
         if (activeView === 'cobranzas-generar-recibo') return "Generar Recibo";
@@ -350,6 +355,14 @@ export function MainLayout() {
                         isActive={activeView === 'informes-cuenta-corriente'}>
                         <Landmark />
                         <span>Cuenta Corriente</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('informes-resumenes-pdf')} 
+                        isActive={activeView === 'informes-resumenes-pdf'}>
+                        <FileArchive />
+                        <span>Resúmenes PDF</span>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                 </SidebarMenuSub>
