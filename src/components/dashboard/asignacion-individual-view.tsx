@@ -8,7 +8,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +19,7 @@ import { getNovedades } from "@/lib/services/novedades"
 import { getAsignaciones, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
+import { Combobox } from "@/components/ui/combobox"
 
 export function AsignacionIndividualView() {
   const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
@@ -34,6 +34,14 @@ export function AsignacionIndividualView() {
   const [isDialogEditOpen, setIsDialogEditOpen] = React.useState(false);
   const [asignacionToEdit, setAsignacionToEdit] = React.useState<AsignacionViewModel | null>(null);
   const { toast } = useToast()
+
+  const clienteOptions = React.useMemo(() => {
+    return clientes.map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }))
+  }, [clientes]);
+  
+  const novedadOptions = React.useMemo(() => {
+    return novedades.map(n => ({ value: n.id, label: `${n.codigo} - ${n.nombre}` }))
+  }, [novedades]);
 
   const fetchData = React.useCallback(async () => {
     setIsLoading(true);
@@ -163,21 +171,27 @@ export function AsignacionIndividualView() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-2">
                     <Label htmlFor="cliente-select">Cliente</Label>
-                    <Select onValueChange={setSelectedClienteId} value={selectedClienteId || ""}>
-                        <SelectTrigger id="cliente-select" disabled={isLoading}><SelectValue placeholder="Seleccione..." /></SelectTrigger>
-                        <SelectContent>
-                            {clientes.map(c => <SelectItem key={c.id} value={c.id}>{`${c.codigo} - ${c.nombre}`}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <Combobox
+                        options={clienteOptions}
+                        value={selectedClienteId}
+                        onValueChange={setSelectedClienteId}
+                        placeholder="Seleccione un cliente..."
+                        searchPlaceholder="Buscar cliente..."
+                        notFoundMessage="No se encontraron clientes."
+                        disabled={isLoading}
+                    />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="novedad-select">Novedad</Label>
-                     <Select onValueChange={setSelectedNovedadId} value={selectedNovedadId || ""}>
-                        <SelectTrigger id="novedad-select" disabled={isLoading}><SelectValue placeholder="Seleccione..." /></SelectTrigger>
-                        <SelectContent>
-                            {novedades.map(n => <SelectItem key={n.id} value={n.id}>{`${n.codigo} - ${n.nombre}`}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <Combobox
+                        options={novedadOptions}
+                        value={selectedNovedadId}
+                        onValueChange={setSelectedNovedadId}
+                        placeholder="Seleccione una novedad..."
+                        searchPlaceholder="Buscar novedad..."
+                        notFoundMessage="No se encontraron novedades."
+                        disabled={isLoading}
+                    />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="cantidad-input">Cantidad</Label>

@@ -20,7 +20,6 @@ import { getAsignacionesByClienteId, addAsignacion, updateAsignacion, deleteAsig
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
 import { Combobox } from "@/components/ui/combobox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function AsignacionClienteView() {
   // Global data
@@ -47,6 +46,10 @@ export function AsignacionClienteView() {
       .sort((a, b) => a.codigo - b.codigo)
       .map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }));
   }, [clientes]);
+
+  const novedadOptions = React.useMemo(() => {
+    return novedades.map(n => ({ value: n.id, label: `${n.codigo} - ${n.nombre}` }))
+  }, [novedades]);
 
 
   // Initial data fetch for clients and novedades
@@ -211,12 +214,15 @@ export function AsignacionClienteView() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div className="space-y-2">
                             <Label htmlFor="novedad-select">Novedad</Label>
-                            <Select onValueChange={setSelectedNovedadId} value={selectedNovedadId || ""}>
-                                <SelectTrigger id="novedad-select"><SelectValue placeholder="Seleccione..." /></SelectTrigger>
-                                <SelectContent>
-                                    {novedades.map(n => <SelectItem key={n.id} value={n.id}>{`${n.codigo} - ${n.nombre}`}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <Combobox 
+                                options={novedadOptions}
+                                value={selectedNovedadId}
+                                onValueChange={setSelectedNovedadId}
+                                placeholder="Seleccione una novedad..."
+                                searchPlaceholder="Buscar novedad..."
+                                notFoundMessage="No se encontraron novedades."
+                                disabled={isLoading}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="cantidad-input">Cantidad</Label>
