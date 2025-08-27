@@ -18,6 +18,13 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import {
   Users,
   FileText,
   LineChart,
@@ -38,6 +45,7 @@ import {
   CheckSquare,
   FilePlus,
   FileArchive,
+  KeyRound,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -57,6 +65,7 @@ import { InformeCobranzasMensualView } from './informe-cobranzas-mensual-view';
 import { InformeCobranzasClienteView } from './informe-cobranzas-cliente-view';
 import { InformeCuentaCorrienteView } from './informe-cuenta-corriente-view';
 import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
+import { ChangePasswordDialog } from './change-password-dialog';
 
 
 // Vistas dinámicas
@@ -76,6 +85,7 @@ export function MainLayout() {
   const [isInformesOpen, setIsInformesOpen] = React.useState(false);
   const [isFacturacionInformeOpen, setIsFacturacionInformeOpen] = React.useState(false);
   const [isCobranzasInformeOpen, setIsCobranzasInformeOpen] = React.useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = React.useState(false);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -398,23 +408,35 @@ export function MainLayout() {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                <AvatarImage src={auth.currentUser?.photoURL || 'https://placehold.co/100x100'} alt="User Avatar" />
-                <AvatarFallback>{auth.currentUser?.email?.substring(0,2).toUpperCase() || 'AV'}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">{auth.currentUser?.displayName || 'Usuario'}</span>
-                <span className="text-xs text-muted-foreground">
-                  {auth.currentUser?.email}
-                </span>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9" tooltip="Cerrar Sesión">
-              <LogOut />
-            </Button>
-          </div>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full justify-start h-auto px-2 py-1.5">
+                  <div className="flex items-center gap-3 w-full">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={auth.currentUser?.photoURL || 'https://placehold.co/100x100'} alt="User Avatar" />
+                      <AvatarFallback>{auth.currentUser?.email?.substring(0,2).toUpperCase() || 'AV'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col items-start text-left">
+                      <span className="text-sm font-medium">{auth.currentUser?.displayName || 'Usuario'}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {auth.currentUser?.email}
+                      </span>
+                    </div>
+                  </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] mb-2">
+              <DropdownMenuItem onClick={() => setIsChangePasswordOpen(true)}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                <span>Cambiar Contraseña</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Cerrar Sesión</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -426,6 +448,7 @@ export function MainLayout() {
           {renderContent()}
         </main>
       </SidebarInset>
+      <ChangePasswordDialog isOpen={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen} />
     </SidebarProvider>
   );
 }
