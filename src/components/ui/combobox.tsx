@@ -44,6 +44,15 @@ export function Combobox({
     disabled = false 
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
