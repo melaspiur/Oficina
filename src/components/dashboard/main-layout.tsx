@@ -46,10 +46,11 @@ import {
   FilePlus,
   FileArchive,
   KeyRound,
+  Loader2,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
@@ -67,15 +68,6 @@ import { InformeCuentaCorrienteView } from './informe-cuenta-corriente-view';
 import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 import { ChangePasswordDialog } from './change-password-dialog';
 
-
-// Vistas dinámicas
-const PlaceholderView = ({ title }: { title: string }) => (
-  <div className="p-6">
-    <h2 className="text-2xl font-bold">{title}</h2>
-    <p>Contenido para {title} irá aquí.</p>
-  </div>
-);
-
 export function MainLayout() {
   const [activeView, setActiveView] = React.useState('clientes-cliente');
   const [isClientesOpen, setIsClientesOpen] = React.useState(true);
@@ -86,8 +78,22 @@ export function MainLayout() {
   const [isFacturacionInformeOpen, setIsFacturacionInformeOpen] = React.useState(false);
   const [isCobranzasInformeOpen, setIsCobranzasInformeOpen] = React.useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = React.useState(false);
+  const [isLoadingAuth, setIsLoadingAuth] = React.useState(true);
   const router = useRouter();
   const auth = getAuth(app);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push('/');
+      } else {
+        setIsLoadingAuth(false);
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [auth, router]);
 
   const handleLogout = async () => {
     try {
@@ -97,6 +103,14 @@ export function MainLayout() {
       console.error("Error al cerrar sesión:", error);
     }
   };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (activeView) {
