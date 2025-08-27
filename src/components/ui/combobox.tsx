@@ -11,12 +11,14 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { ScrollArea } from "./scroll-area"
 
 export interface ComboboxOption {
     value: string;
@@ -67,27 +69,31 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()} align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandEmpty>{notFoundMessage}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={handleSelect}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            <CommandList>
+                <ScrollArea className="h-auto max-h-60">
+                    <CommandGroup>
+                    {options.map((option) => (
+                        <CommandItem
+                        key={option.value}
+                        value={option.value}
+                        onSelect={handleSelect}
+                        >
+                        <Check
+                            className={cn(
+                            "mr-2 h-4 w-4",
+                            value === option.value ? "opacity-100" : "opacity-0"
+                            )}
+                        />
+                        {option.label}
+                        </CommandItem>
+                    ))}
+                    </CommandGroup>
+                </ScrollArea>
+            </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
