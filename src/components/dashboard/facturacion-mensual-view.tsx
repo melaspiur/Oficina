@@ -36,6 +36,7 @@ export function FacturacionMensualView() {
   const [isProcessing, setIsProcessing] = React.useState(false)
   const [facturacionResult, setFacturacionResult] = React.useState<GenerarFacturacionOutput | null>(null)
   const [config, setConfig] = React.useState<ConfiguracionComprobantes | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const { toast } = useToast()
 
   const form = useForm<FormSchema>({
@@ -275,7 +276,7 @@ export function FacturacionMensualView() {
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Fecha de Facturación</FormLabel>
-                    <Popover>
+                    <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -298,7 +299,10 @@ export function FacturacionMensualView() {
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            field.onChange(date);
+                            setIsCalendarOpen(false);
+                          }}
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
                           }
