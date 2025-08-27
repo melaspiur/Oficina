@@ -30,7 +30,7 @@ export function ModificarReciboView() {
 
   const clienteOptions = React.useMemo(() => {
       return allClientes
-        .sort((a,b) => a.codigo - b.codigo)
+        .sort((a, b) => a.codigo - b.codigo)
         .map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }));
   }, [allClientes])
 

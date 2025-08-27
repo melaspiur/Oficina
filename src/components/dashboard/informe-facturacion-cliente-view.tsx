@@ -30,8 +30,8 @@ export function InformeFacturacionClienteView() {
 
   const clienteOptions = React.useMemo(() => {
       return allClientes
-        .map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }))
-        .sort((a,b) => a.label.localeCompare(b.label));
+        .sort((a, b) => a.codigo - b.codigo)
+        .map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }));
   }, [allClientes])
 
   React.useEffect(() => {
