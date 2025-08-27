@@ -62,7 +62,7 @@ export function Combobox({
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
