@@ -43,10 +43,12 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<Cliente>({
     resolver: zodResolver(clienteSchema),
     defaultValues: cliente || {
-      codigo: Math.floor(Math.random() * 9998) + 1,
+      codigo: 0, // Initialize with a temporary value
+      nombre: "",
       domicilio: "",
       localidad: "",
       provincia: "",
+      cuit: "",
       tipo: "inscripto",
       categoria: 1,
       mail: "",
@@ -56,7 +58,10 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
 
   React.useEffect(() => {
     if (isOpen) {
-        reset(cliente || {
+      if (cliente) {
+        reset(cliente);
+      } else {
+        reset({
             codigo: Math.floor(Math.random() * 9998) + 1,
             nombre: "",
             domicilio: "",
@@ -68,6 +73,7 @@ export function ClienteDialog({ isOpen, onOpenChange, onSave, cliente }: Cliente
             mail: "",
             celular: "",
       });
+      }
     }
   }, [isOpen, cliente, reset]);
   

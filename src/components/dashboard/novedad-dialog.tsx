@@ -62,7 +62,7 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
   const { register, handleSubmit, control, formState: { errors }, reset, setValue } = useForm<Novedad>({
     resolver: zodResolver(novedadSchema),
     defaultValues: novedad || {
-      codigo: Math.floor(Math.random() * 98) + 1,
+      codigo: 0,
       nombre: "",
       importe: 0,
       meses: defaultMeses
@@ -71,12 +71,16 @@ export function NovedadDialog({ isOpen, onOpenChange, onSave, novedad }: Novedad
 
   React.useEffect(() => {
     if (isOpen) {
-      reset(novedad || {
-        codigo: Math.floor(Math.random() * 98) + 1,
-        nombre: "",
-        importe: 0,
-        meses: defaultMeses
-      });
+      if (novedad) {
+         reset(novedad);
+      } else {
+        reset({
+            codigo: Math.floor(Math.random() * 98) + 1,
+            nombre: "",
+            importe: 0,
+            meses: defaultMeses
+        });
+      }
     }
   }, [isOpen, novedad, reset]);
   
