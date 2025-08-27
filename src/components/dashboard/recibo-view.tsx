@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -80,7 +81,7 @@ export function ReciboView() {
      defaultValues: {
       importe: 0,
       descripcion: "",
-      fecha: "",
+      fecha: formatDate(new Date(), "dd/MM/yyyy"),
     }
   })
 
@@ -230,7 +231,7 @@ export function ReciboView() {
         importe: 0,
         descripcion: "",
         clienteId: undefined,
-        fecha: "",
+        fecha: formatDate(new Date(), "dd/MM/yyyy"),
     });
     setDisplayImporte("0,00");
   }
