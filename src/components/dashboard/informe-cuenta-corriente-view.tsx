@@ -52,7 +52,7 @@ export function InformeCuentaCorrienteView() {
     fetchClientesData();
   }, [toast]);
   
-  const handleSelectCliente = async (clienteId: string | null) => {
+  const handleSelectCliente = async (clienteId: string) => {
     setSelectedClienteId(clienteId);
     
     if (!clienteId) {
@@ -131,6 +131,7 @@ export function InformeCuentaCorrienteView() {
     
     // Add total row
     dataForSheet.push({
+      // @ts-ignore
       Fecha: '',
       Comprobante: '',
       Descripcion: 'Saldo Final',

@@ -81,7 +81,7 @@ export function AplicarReciboView() {
     }
   }, [toast]);
 
-  const handleSelectCliente = (clienteId: string | null) => {
+  const handleSelectCliente = (clienteId: string) => {
     setSelectedClienteId(clienteId);
     setSelectedRecibos(new Set());
     setSelectedFacturas(new Set());
@@ -172,7 +172,9 @@ export function AplicarReciboView() {
               description: `La aplicación se guardó correctamente. Refrescando datos...`,
           });
           // Refresh data from Firestore to get the updated values
-          handleSelectCliente(selectedClienteId);
+          fetchClientData(selectedClienteId);
+          setSelectedRecibos(new Set());
+          setSelectedFacturas(new Set());
       } catch (error) {
            console.error("Error al guardar aplicación:", error);
            toast({ title: "Error", description: "No se pudo guardar la aplicación.", variant: "destructive" });

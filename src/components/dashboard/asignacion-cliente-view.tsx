@@ -102,12 +102,7 @@ export function AsignacionClienteView() {
       }
   }, [clientes, novedades, toast]);
 
-  const handleSelectCliente = (clienteId: string | null) => {
-    if (clienteId === null) {
-      setSelectedCliente(null);
-      setAsignacionesCliente([]);
-      return;
-    }
+  const handleSelectCliente = (clienteId: string) => {
     const cliente = clientes.find(c => c.id === clienteId);
     setSelectedCliente(cliente || null);
     setAsignacionesCliente([]); // Clear previous assignments
@@ -194,7 +189,7 @@ export function AsignacionClienteView() {
                 <Label htmlFor="cliente-select">Cliente</Label>
                  <Combobox 
                     options={clienteOptions}
-                    value={selectedCliente?.id || null}
+                    value={selectedCliente?.id}
                     onValueChange={handleSelectCliente}
                     placeholder="Seleccione un cliente..."
                     searchPlaceholder="Buscar cliente..."

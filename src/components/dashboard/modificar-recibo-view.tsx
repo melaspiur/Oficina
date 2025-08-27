@@ -50,7 +50,7 @@ export function ModificarReciboView() {
     fetchClientesData();
   }, [toast]);
   
-  const handleSelectCliente = async (clienteId: string | null) => {
+  const handleSelectCliente = async (clienteId: string) => {
     setSelectedClienteId(clienteId);
     setRecibosCliente([]);
     

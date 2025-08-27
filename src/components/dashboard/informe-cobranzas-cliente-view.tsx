@@ -47,7 +47,7 @@ export function InformeCobranzasClienteView() {
     fetchClientesData();
   }, [toast]);
   
-  const handleSelectCliente = async (clienteId: string | null) => {
+  const handleSelectCliente = async (clienteId: string) => {
     setSelectedClienteId(clienteId);
     
     if (!clienteId) {
