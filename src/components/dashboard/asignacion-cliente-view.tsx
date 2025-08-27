@@ -59,7 +59,10 @@ export function AsignacionClienteView() {
         try {
             const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
             setClientes(clientesData);
-            setNovedades(novedadesData.sort((a, b) => a.codigo - b.codigo));
+            
+            const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.codigo, item])).values());
+            setNovedades(uniqueNovedades.sort((a, b) => a.codigo - b.codigo));
+
         } catch (error) {
             console.error("Error fetching data:", error);
             toast({ title: "Error", description: "No se pudieron cargar los datos iniciales.", variant: "destructive" });

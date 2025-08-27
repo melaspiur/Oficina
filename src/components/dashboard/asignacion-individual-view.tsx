@@ -57,7 +57,9 @@ export function AsignacionIndividualView() {
 
       const sortedClientes = clientesData.sort((a, b) => a.codigo - b.codigo);
       setClientes(sortedClientes);
-      const sortedNovedades = novedadesData.sort((a, b) => a.codigo - b.codigo);
+      
+      const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.codigo, item])).values());
+      const sortedNovedades = uniqueNovedades.sort((a, b) => a.codigo - b.codigo);
       setNovedades(sortedNovedades);
       
       const viewModel: AsignacionViewModel[] = asignacionesData.map(asignacion => {
