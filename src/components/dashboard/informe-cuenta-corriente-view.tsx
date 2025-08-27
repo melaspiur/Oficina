@@ -210,7 +210,7 @@ export function InformeCuentaCorrienteView() {
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
-                        <CardTitle>Resultados del Informe</CardTitle>
+                        <CardTitle>Cuenta Corriente</CardTitle>
                         {selectedCliente && !isProcessing && (
                             <CardDescription>
                                 Mostrando {reportData.length} movimientos para {selectedCliente.nombre}.
@@ -221,7 +221,7 @@ export function InformeCuentaCorrienteView() {
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={handleExportCSV}>
                                 <FileDown className="mr-2 h-4 w-4" />
-                                Exportar a CSV
+                                Exportar a Excel
                             </Button>
                             <Button variant="outline" size="sm" onClick={handleExportPDF}>
                                <FileDown className="mr-2 h-4 w-4" />
