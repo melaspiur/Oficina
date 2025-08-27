@@ -69,6 +69,7 @@ import { InformeCuentaCorrienteView } from './informe-cuenta-corriente-view';
 import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 import { ChangePasswordDialog } from './change-password-dialog';
 import { DesaplicarReciboView } from './desaplicar-recibo-view';
+import { ModificarFacturaView } from './modificar-factura-view';
 
 export function MainLayout() {
   const [activeView, setActiveView] = React.useState('clientes-cliente');
@@ -122,8 +123,10 @@ export function MainLayout() {
         return <NovedadesView />;
       case 'clientes-asignaciones':
         return <AsignacionView />;
-      case 'facturacion':
+      case 'facturacion-generar':
         return <FacturacionView />;
+      case 'facturacion-modificar':
+        return <ModificarFacturaView />;
       case 'cobranzas-generar-recibo':
         return <ReciboView />;
       case 'cobranzas-modificar-recibo':
@@ -157,8 +160,9 @@ export function MainLayout() {
        if (activeView === 'clientes-asignaciones') return "Asignaciones";
       return title.charAt(0).toUpperCase() + title.slice(1);
     }
-     if (activeView === 'facturacion') {
-        return "Facturación";
+     if (activeView.startsWith('facturacion-')) {
+        if (activeView === 'facturacion-generar') return "Generar Facturación";
+        if (activeView === 'facturacion-modificar') return "Modificar Factura";
      }
       if (activeView.startsWith('ajustes-')) {
         const title = activeView.split('-')[1];
@@ -241,14 +245,39 @@ export function MainLayout() {
               )}
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton
-                    onClick={() => setActiveView('facturacion')}
-                    isActive={activeView === 'facturacion'}
-                    tooltip="Facturación"
-                >
-                    <FileText />
-                    <span>Facturación</span>
+              <SidebarMenuButton
+                onClick={() => setIsFacturacionOpen(!isFacturacionOpen)}
+                isActive={activeView.startsWith('facturacion-')}
+                tooltip="Facturación"
+              >
+                <FileText />
+                <span>Facturación</span>
+                <ChevronDown
+                  className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                    isFacturacionOpen ? 'rotate-180' : ''
+                  }`}
+                />
               </SidebarMenuButton>
+              {isFacturacionOpen && (
+                <SidebarMenuSub>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton 
+                      onClick={() => setActiveView('facturacion-generar')} 
+                      isActive={activeView === 'facturacion-generar'}>
+                      <FilePlus />
+                      <span>Generar Facturación</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton 
+                      onClick={() => setActiveView('facturacion-modificar')} 
+                      isActive={activeView === 'facturacion-modificar'}>
+                      <Pencil />
+                      <span>Modificar Factura</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              )}
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton 
