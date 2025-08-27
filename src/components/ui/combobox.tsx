@@ -17,7 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 export interface ComboboxOption {
     value: string;
@@ -72,7 +71,6 @@ export function Combobox({
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandEmpty>{notFoundMessage}</CommandEmpty>
-          <ScrollArea className="h-auto max-h-60">
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
@@ -90,7 +88,6 @@ export function Combobox({
                 </CommandItem>
               ))}
             </CommandGroup>
-          </ScrollArea>
         </Command>
       </PopoverContent>
     </Popover>
