@@ -135,16 +135,12 @@ export async function getMovimientosPorClienteLastYear(clienteId: string): Promi
 
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    const oneYearAgoISO = oneYearAgo.toISOString();
-
-    const q = query(
-        movimientosCollection,
-        where("clienteId", "==", clienteId),
-        where("fecha", ">=", oneYearAgoISO)
-    );
     
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
+    const allMovimientos = await getMovimientosPorCliente(clienteId);
+
+    const filteredMovimientos = allMovimientos.filter(mov => new Date(mov.fecha) >= oneYearAgo);
+    
+    return filteredMovimientos;
 }
 
 
