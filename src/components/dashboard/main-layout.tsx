@@ -52,6 +52,8 @@ import { InformeFacturacionMensualView } from './informe-facturacion-mensual-vie
 import { InformeFacturacionClienteView } from './informe-facturacion-cliente-view';
 import { ModificarReciboView } from './modificar-recibo-view';
 import { AplicarReciboView } from './aplicar-recibo-view';
+import { InformeCobranzasMensualView } from './informe-cobranzas-mensual-view';
+import { InformeCobranzasClienteView } from './informe-cobranzas-cliente-view';
 
 
 // Vistas dinámicas
@@ -70,6 +72,7 @@ export function MainLayout() {
   const [isAjustesOpen, setIsAjustesOpen] = React.useState(false);
   const [isInformesOpen, setIsInformesOpen] = React.useState(false);
   const [isFacturacionInformeOpen, setIsFacturacionInformeOpen] = React.useState(false);
+  const [isCobranzasInformeOpen, setIsCobranzasInformeOpen] = React.useState(false);
   const router = useRouter();
   const auth = getAuth(app);
 
@@ -104,8 +107,10 @@ export function MainLayout() {
         return <InformeFacturacionMensualView />;
       case 'informes-facturacion-cliente':
         return <InformeFacturacionClienteView />;
-      case 'informes-cobranzas':
-        return <PlaceholderView title="Informe de Cobranzas" />;
+      case 'informes-cobranzas-mensual':
+        return <InformeCobranzasMensualView />;
+      case 'informes-cobranzas-cliente':
+        return <InformeCobranzasClienteView />;
       case 'informes-cuenta-corriente':
         return <PlaceholderView title="Informe de Cuenta Corriente" />;
       default:
@@ -129,7 +134,8 @@ export function MainLayout() {
       if (activeView.startsWith('informes-')) {
         if (activeView === 'informes-facturacion-mensual') return "Informe de Facturación Mensual";
         if (activeView === 'informes-facturacion-cliente') return "Informe de Facturación por Cliente";
-        if (activeView === 'informes-cobranzas') return "Informe de Cobranzas";
+        if (activeView === 'informes-cobranzas-mensual') return "Informe de Cobranzas Mensual";
+        if (activeView === 'informes-cobranzas-cliente') return "Informe de Cobranzas por Cliente";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
      }
      if (activeView.startsWith('cobranzas-')) {
@@ -302,14 +308,41 @@ export function MainLayout() {
                             </SidebarMenuSub>
                         )}
                     </SidebarMenuItem>
-                    <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                        onClick={() => setActiveView('informes-cobranzas')} 
-                        isActive={activeView === 'informes-cobranzas'}>
-                        <Wallet />
-                        <span>Cobranzas</span>
-                        </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={() => setIsCobranzasInformeOpen(!isCobranzasInformeOpen)}
+                            isActive={activeView.startsWith('informes-cobranzas')}
+                            className="h-8"
+                        >
+                            <Wallet />
+                            <span>Cobranzas</span>
+                             <ChevronDown
+                                className={`ml-auto h-5 w-5 transform transition-transform duration-200 ${
+                                    isCobranzasInformeOpen ? 'rotate-180' : ''
+                                }`}
+                            />
+                        </SidebarMenuButton>
+                        {isCobranzasInformeOpen && (
+                             <SidebarMenuSub>
+                                <SidebarMenuSubItem>
+                                    <SidebarMenuSubButton 
+                                    onClick={() => setActiveView('informes-cobranzas-mensual')} 
+                                    isActive={activeView === 'informes-cobranzas-mensual'}>
+                                        <Calendar />
+                                        <span>Mensual</span>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                                <SidebarMenuSubItem>
+                                    <SidebarMenuSubButton 
+                                    onClick={() => setActiveView('informes-cobranzas-cliente')} 
+                                    isActive={activeView === 'informes-cobranzas-cliente'}>
+                                        <Contact />
+                                        <span>Cliente</span>
+                                    </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                            </SidebarMenuSub>
+                        )}
+                    </SidebarMenuItem>
                      <SidebarMenuSubItem>
                         <SidebarMenuSubButton 
                         onClick={() => setActiveView('informes-cuenta-corriente')} 

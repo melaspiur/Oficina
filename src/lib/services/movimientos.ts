@@ -78,6 +78,35 @@ export async function getMovimientosFacturasPorMes(year: number, month: number):
   return filteredFacturas;
 }
 
+
+/**
+ * Fetches all 'RE' (Recibo) movements for a specific month and year.
+ * @param year The full year (e.g., 2024).
+ * @param month The month (1-12).
+ * @returns A promise that resolves to an array of MovimientoWithId.
+ */
+export async function getMovimientosRecibosPorMes(year: number, month: number): Promise<MovimientoWithId[]> {
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 1); // First day of next month
+
+  const q = query(
+    movimientosCollection,
+    where("comprobante", "==", "RE")
+  );
+
+  const snapshot = await getDocs(q);
+  
+  const allRecibos = snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
+
+  // Filter by date in the client-side code
+  const filteredRecibos = allRecibos.filter(mov => {
+      const movDate = new Date(mov.fecha);
+      return movDate >= startDate && movDate < endDate;
+  });
+
+  return filteredRecibos;
+}
+
 /**
  * Fetches all movements for a specific client.
  * @param clienteId The ID of the client.
