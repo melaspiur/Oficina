@@ -8,7 +8,7 @@ import { getEmpresas, initializePrimaryFirebase } from '@/lib/services/empresas'
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
-import { BotMessageSquare, Loader2 } from 'lucide-react';
+import { BotMessageSquare, Loader2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EmpresasAdminDialog } from '@/components/dashboard/empresas-admin-dialog';
 
@@ -17,7 +17,6 @@ export default function CompanySelectorPage() {
   const [empresas, setEmpresas] = React.useState<Empresa[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isAdminDialogOpen, setIsAdminDialogOpen] = React.useState(false);
-  const [titleClickCount, setTitleClickCount] = React.useState(0);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -79,17 +78,6 @@ export default function CompanySelectorPage() {
       });
     }
   };
-
-  const handleTitleClick = () => {
-    const newCount = titleClickCount + 1;
-    setTitleClickCount(newCount);
-    if (newCount >= 5) {
-      setIsAdminDialogOpen(true);
-      setTitleClickCount(0); // Reset counter
-    }
-    // Optional: reset after a timeout if the sequence is not completed
-    setTimeout(() => setTitleClickCount(0), 1500);
-  };
   
   const onAdminDialogClose = async () => {
       setIsAdminDialogOpen(false);
@@ -104,12 +92,17 @@ export default function CompanySelectorPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-lg relative">
+        <div className="absolute top-2 right-2">
+            <Button variant="ghost" size="icon" onClick={() => setIsAdminDialogOpen(true)}>
+                <Settings className="h-5 w-5" />
+            </Button>
+        </div>
+        <CardHeader className="text-center pt-12">
           <div className="flex justify-center mb-2">
             <BotMessageSquare className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl cursor-pointer" onClick={handleTitleClick}>
+          <CardTitle className="text-2xl">
             Bienvenido al Sistema de Gestión
           </CardTitle>
           <CardDescription>Seleccione la oficina con la que desea trabajar</CardDescription>
