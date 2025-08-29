@@ -4,7 +4,7 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { getAuth, updatePassword } from "firebase/auth"
+import { getAuth, updatePassword, type Auth } from "firebase/auth"
 import { Loader2 } from "lucide-react"
 
 import {
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useToast } from "@/hooks/use-toast"
-import { app } from "@/lib/firebase"
+import { getClientAuth } from "@/lib/firebase"
 
 const formSchema = z.object({
   newPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
@@ -39,7 +39,14 @@ type ChangePasswordDialogProps = {
 export function ChangePasswordDialog({ isOpen, onOpenChange }: ChangePasswordDialogProps) {
   const { toast } = useToast()
   const [isSaving, setIsSaving] = React.useState(false)
-  const auth = getAuth(app)
+  const [authInstance, setAuthInstance] = React.useState<Auth | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setAuthInstance(getClientAuth());
+    }
+  }, [isOpen]);
+
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -50,7 +57,11 @@ export function ChangePasswordDialog({ isOpen, onOpenChange }: ChangePasswordDia
   });
 
   const onSubmit = async (data: FormSchema) => {
-    const user = auth.currentUser;
+    if (!authInstance) {
+       toast({ title: "Error", description: "No se pudo obtener la instancia de autenticación.", variant: "destructive" });
+       return;
+    }
+    const user = authInstance.currentUser;
     if (!user) {
       toast({ title: "Error", description: "No hay un usuario autenticado.", variant: "destructive" });
       return;

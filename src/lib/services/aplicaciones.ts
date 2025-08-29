@@ -1,10 +1,6 @@
-import { db } from "@/lib/firebase";
+import { getClientDb } from "@/lib/firebase";
 import type { Aplicacion, AplicacionWithId } from "@/lib/types";
 import { collection, writeBatch, doc, increment, query, where, getDocs, deleteDoc } from "firebase/firestore";
-
-const aplicacionesCollection = collection(db, "aplicaciones");
-const movimientosCollection = collection(db, "movimientos");
-
 
 /**
  * Adds an array of application documents to the 'aplicaciones' collection using a batch write.
@@ -12,9 +8,15 @@ const movimientosCollection = collection(db, "movimientos");
  * @param aplicaciones An array of Aplicacion objects to add.
  */
 export async function addAplicacionesBatch(aplicaciones: Aplicacion[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+
     if (!aplicaciones || aplicaciones.length === 0) {
         return;
     }
+    
+    const aplicacionesCollection = collection(db, "aplicaciones");
+    const movimientosCollection = collection(db, "movimientos");
 
     const batch = writeBatch(db);
     const reciboId = aplicaciones[0].reciboId; // All applications in a batch belong to the same receipt
@@ -52,6 +54,10 @@ export async function addAplicacionesBatch(aplicaciones: Aplicacion[]) {
  * @returns A promise that resolves to an array of AplicacionWithId.
  */
 export async function getAplicacionesPorRecibo(reciboId: string): Promise<AplicacionWithId[]> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const aplicacionesCollection = collection(db, "aplicaciones");
+    
     if (!reciboId) return [];
 
     const q = query(aplicacionesCollection, where("reciboId", "==", reciboId));
@@ -66,6 +72,11 @@ export async function getAplicacionesPorRecibo(reciboId: string): Promise<Aplica
  * @param reciboIds An array of receipt IDs to unapply.
  */
 export async function deleteAplicacionesBatch(reciboIds: string[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const aplicacionesCollection = collection(db, "aplicaciones");
+    const movimientosCollection = collection(db, "movimientos");
+    
     if (!reciboIds || reciboIds.length === 0) return;
 
     const batch = writeBatch(db);

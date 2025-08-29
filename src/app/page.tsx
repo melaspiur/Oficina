@@ -1,70 +1,75 @@
 "use client";
 
-import { useState } from 'react';
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { app } from '@/lib/firebase'; // Asegúrate de que la ruta sea correcta
+import { empresas, type Empresa } from '@/lib/empresas';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
 import { BotMessageSquare } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+export default function CompanySelectorPage() {
+  const [selectedCuit, setSelectedCuit] = React.useState<string | null>(null);
   const router = useRouter();
-  const auth = getAuth(app);
+  const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
+  const empresaOptions = React.useMemo(() => {
+    return empresas.map(e => ({ value: e.cuit, label: `${e.nombre} - CUIT: ${e.cuit}` }));
+  }, []);
+
+  const handleSelectEmpresa = (cuit: string) => {
+    setSelectedCuit(cuit);
+  };
+
+  const handleContinue = () => {
+    if (!selectedCuit) {
+      toast({
+        title: "Error",
+        description: "Por favor, seleccione una empresa para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const empresa = empresas.find(e => e.cuit === selectedCuit);
+    if (empresa) {
+      // Store the selected company's config in localStorage to be picked up by the login page
+      localStorage.setItem('selectedFirebaseConfig', JSON.stringify(empresa.firebaseConfig));
+      localStorage.setItem('selectedEmpresaNombre', empresa.nombre);
+      router.push('/login');
+    } else {
+       toast({
+        title: "Error",
+        description: "La configuración de la empresa seleccionada no se encontró.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
             <BotMessageSquare className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Bienvenido a tu Oficina Virtual</CardTitle>
-          <CardDescription>Ingresa tus credenciales para continuar</CardDescription>
+          <CardTitle className="text-2xl">Bienvenido al Sistema de Gestión</CardTitle>
+          <CardDescription>Seleccione la oficina con la que desea trabajar</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full">Iniciar Sesión</Button>
-          </form>
+        <CardContent className="space-y-6">
+           <Combobox 
+                options={empresaOptions}
+                value={selectedCuit}
+                onValueChange={handleSelectEmpresa}
+                placeholder="Seleccione una empresa..."
+                searchPlaceholder="Buscar por nombre o CUIT..."
+                notFoundMessage="No se encontraron empresas."
+            />
+          <Button onClick={handleContinue} className="w-full" disabled={!selectedCuit}>
+            Continuar
+          </Button>
         </CardContent>
       </Card>
     </div>

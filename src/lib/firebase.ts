@@ -1,23 +1,40 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import type { FirebaseConfig } from "./empresas";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBJTWFDM421pUDAjaR5c4wchlywO7Tu38E",
-  authDomain: "oficina-72505.firebaseapp.com",
-  projectId: "oficina-72505",
-  storageBucket: "oficina-72505.appspot.com",
-  messagingSenderId: "764425604004",
-  appId: "1:764425604004:web:e2a3f3b4c5d6e7f8a9b0c1"
-};
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
+/**
+ * Initializes a Firebase app instance for a specific company configuration.
+ * This allows the application to dynamically connect to different Firebase projects.
+ *
+ * @param {FirebaseConfig} config - The Firebase configuration object for the company.
+ * @returns {{app: FirebaseApp, auth: Auth, db: Firestore}} - The initialized Firebase services.
+ */
+export function initializeFirebaseClient(config: FirebaseConfig): { app: FirebaseApp, auth: Auth, db: Firestore } {
+  // Check if an app with this name already exists to avoid re-initialization
+  // We use the projectId as a unique name for the app instance.
+  const appName = config.projectId;
+  const existingApp = getApps().find(app => app.name === appName);
 
-export { app, auth, db };
+  if (existingApp) {
+    app = existingApp;
+  } else {
+    app = initializeApp(config, appName);
+  }
+  
+  auth = getAuth(app);
+  db = getFirestore(app);
+
+  return { app, auth, db };
+}
+
+// These functions allow other parts of the app to get the current Firebase instance.
+// They will return null if Firebase hasn't been initialized for a company yet.
+export const getClientApp = () => app;
+export const getClientAuth = () => auth;
+export const getClientDb = () => db;

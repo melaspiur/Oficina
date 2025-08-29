@@ -1,9 +1,7 @@
-
-import { db } from "@/lib/firebase";
+import { getClientDb } from "@/lib/firebase";
 import type { Movimiento, MovimientoWithId } from "@/lib/types";
-import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc, increment } from "firebase/firestore";
+import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc } from "firebase/firestore";
 
-const movimientosCollection = collection(db, "movimientos");
 
 /**
  * Adds a single movement document to the 'movimientos' collection.
@@ -11,9 +9,13 @@ const movimientosCollection = collection(db, "movimientos");
  * @returns The ID of the newly created document.
  */
 export async function addMovimiento(movimiento: Movimiento): Promise<string> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+
     if (!movimiento) {
         throw new Error("Movimiento data is required.");
     }
+    const movimientosCollection = collection(db, "movimientos");
     const docRef = await addDoc(movimientosCollection, movimiento);
     return docRef.id;
 }
@@ -24,6 +26,10 @@ export async function addMovimiento(movimiento: Movimiento): Promise<string> {
  * @param movimientos An array of Movimiento objects to add.
  */
 export async function addMovimientosBatch(movimientos: Movimiento[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const movimientosCollection = collection(db, "movimientos");
+
     if (!movimientos || movimientos.length === 0) {
         return;
     }
@@ -31,7 +37,6 @@ export async function addMovimientosBatch(movimientos: Movimiento[]) {
     const batch = writeBatch(db);
 
     movimientos.forEach(movimiento => {
-        // Firestore will auto-generate an ID for the new document
         const docRef = doc(movimientosCollection); 
         batch.set(docRef, movimiento);
     });
@@ -45,6 +50,8 @@ export async function addMovimientosBatch(movimientos: Movimiento[]) {
  * @param data The partial data to update.
  */
 export async function updateMovimiento(id: string, data: Partial<Movimiento>) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
     const movimientoDoc = doc(db, "movimientos", id);
     await updateDoc(movimientoDoc, data);
 }
@@ -57,8 +64,12 @@ export async function updateMovimiento(id: string, data: Partial<Movimiento>) {
  * @returns A promise that resolves to an array of MovimientoWithId.
  */
 export async function getMovimientosFacturasPorMes(year: number, month: number): Promise<MovimientoWithId[]> {
+  const db = getClientDb();
+  if (!db) throw new Error("Firestore is not initialized");
+  const movimientosCollection = collection(db, "movimientos");
+  
   const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 1); // First day of next month
+  const endDate = new Date(year, month, 1);
 
   const q = query(
     movimientosCollection,
@@ -69,7 +80,6 @@ export async function getMovimientosFacturasPorMes(year: number, month: number):
   
   const allFacturas = snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
 
-  // Filter by date in the client-side code
   const filteredFacturas = allFacturas.filter(mov => {
       const movDate = new Date(mov.fecha);
       return movDate >= startDate && movDate < endDate;
@@ -86,8 +96,12 @@ export async function getMovimientosFacturasPorMes(year: number, month: number):
  * @returns A promise that resolves to an array of MovimientoWithId.
  */
 export async function getMovimientosRecibosPorMes(year: number, month: number): Promise<MovimientoWithId[]> {
+  const db = getClientDb();
+  if (!db) throw new Error("Firestore is not initialized");
+  const movimientosCollection = collection(db, "movimientos");
+
   const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 1); // First day of next month
+  const endDate = new Date(year, month, 1);
 
   const q = query(
     movimientosCollection,
@@ -98,7 +112,6 @@ export async function getMovimientosRecibosPorMes(year: number, month: number): 
   
   const allRecibos = snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
 
-  // Filter by date in the client-side code
   const filteredRecibos = allRecibos.filter(mov => {
       const movDate = new Date(mov.fecha);
       return movDate >= startDate && movDate < endDate;
@@ -113,6 +126,10 @@ export async function getMovimientosRecibosPorMes(year: number, month: number): 
  * @returns A promise that resolves to an array of all movements for the client.
  */
 export async function getMovimientosPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const movimientosCollection = collection(db, "movimientos");
+
     if (!clienteId) return [];
 
     const q = query(
@@ -156,11 +173,11 @@ export async function getMovimientosPendientesPorCliente(clienteId: string): Pro
     const movimientosCliente = await getMovimientosPorCliente(clienteId);
 
     const facturasPendientes = movimientosCliente
-        .filter(mov => mov.comprobante === 'FC' && (mov.importe - mov.aplicacion) > 0.01) // Check for a positive balance with a tolerance
+        .filter(mov => mov.comprobante === 'FC' && (mov.importe - mov.aplicacion) > 0.01)
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
     const recibosPendientes = movimientosCliente
-        .filter(mov => mov.comprobante === 'RE' && (mov.importe - mov.aplicacion) > 0.01) // Check for a positive balance with a tolerance
+        .filter(mov => mov.comprobante === 'RE' && (mov.importe - mov.aplicacion) > 0.01)
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
     return {
@@ -176,6 +193,10 @@ export async function getMovimientosPendientesPorCliente(clienteId: string): Pro
  * @returns A promise that resolves to an array of MovimientoWithId.
  */
 export async function getMovimientosFacturasPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+  const db = getClientDb();
+  if (!db) throw new Error("Firestore is not initialized");
+  const movimientosCollection = collection(db, "movimientos");
+  
   if (!clienteId) return [];
 
   const q = query(
@@ -195,6 +216,10 @@ export async function getMovimientosFacturasPorCliente(clienteId: string): Promi
  * @returns A promise that resolves to an array of MovimientoWithId.
  */
 export async function getMovimientosRecibosPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+  const db = getClientDb();
+  if (!db) throw new Error("Firestore is not initialized");
+  const movimientosCollection = collection(db, "movimientos");
+
   if (!clienteId) return [];
 
   const q = query(
@@ -216,6 +241,10 @@ export async function getMovimientosRecibosPorCliente(clienteId: string): Promis
  * @returns A promise that resolves to an array of unique client IDs.
  */
 export async function getClientesConMovimientos(year: number, month: number): Promise<string[]> {
+  const db = getClientDb();
+  if (!db) throw new Error("Firestore is not initialized");
+  const movimientosCollection = collection(db, "movimientos");
+  
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 1);
 

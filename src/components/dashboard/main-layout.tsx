@@ -53,8 +53,8 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
-import { getAuth, signOut, onAuthStateChanged } from 'firebase/auth';
-import { app } from '@/lib/firebase';
+import { getAuth, signOut, onAuthStateChanged, type Auth } from 'firebase/auth';
+import { initializeFirebaseClient, getClientAuth, getClientDb } from '@/lib/firebase';
 import { ClientesView } from '@/components/dashboard/clientes-view';
 import { NovedadesView } from './novedades-view';
 import { FacturacionView } from './facturacion-view';
@@ -72,6 +72,7 @@ import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 import { ChangePasswordDialog } from './change-password-dialog';
 import { DesaplicarReciboView } from './desaplicar-recibo-view';
 import { ModificarFacturaView } from './modificar-factura-view';
+import type { FirebaseConfig } from '@/lib/empresas';
 
 export function MainLayout() {
   const [activeView, setActiveView] = React.useState('home');
@@ -84,25 +85,42 @@ export function MainLayout() {
   const [isCobranzasInformeOpen, setIsCobranzasInformeOpen] = React.useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = React.useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = React.useState(true);
+  const [authInstance, setAuthInstance] = React.useState<Auth | null>(null);
   const router = useRouter();
-  const auth = getAuth(app);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        router.push('/');
-      } else {
-        setIsLoadingAuth(false);
-      }
-    });
+    const configStr = localStorage.getItem('selectedFirebaseConfig');
+    if (!configStr) {
+      router.replace('/');
+      return;
+    }
+    
+    try {
+        const config: FirebaseConfig = JSON.parse(configStr);
+        const { auth } = initializeFirebaseClient(config);
+        setAuthInstance(auth);
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, [auth, router]);
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (!user) {
+            router.replace('/login');
+          } else {
+            setIsLoadingAuth(false);
+          }
+        });
+        
+        return () => unsubscribe();
+    } catch(e) {
+        console.error("Failed to initialize Firebase in layout", e);
+        router.replace('/');
+    }
+  }, [router]);
 
   const handleLogout = async () => {
+    if (!authInstance) return;
     try {
-      await signOut(auth);
+      await signOut(authInstance);
+      localStorage.removeItem('selectedFirebaseConfig');
+      localStorage.removeItem('selectedEmpresaNombre');
       router.push('/');
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -120,7 +138,7 @@ export function MainLayout() {
     setIsCobranzasInformeOpen(false);
   }
 
-  if (isLoadingAuth) {
+  if (isLoadingAuth || !authInstance) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -502,13 +520,13 @@ export function MainLayout() {
               <Button variant="ghost" className="w-full justify-start h-auto px-2 py-1.5">
                   <div className="flex items-center gap-3 w-full">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={auth.currentUser?.photoURL || 'https://placehold.co/100x100'} alt="User Avatar" />
-                      <AvatarFallback>{auth.currentUser?.email?.substring(0,2).toUpperCase() || 'AV'}</AvatarFallback>
+                      <AvatarImage src={authInstance.currentUser?.photoURL || 'https://placehold.co/100x100'} alt="User Avatar" />
+                      <AvatarFallback>{authInstance.currentUser?.email?.substring(0,2).toUpperCase() || 'AV'}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col items-start text-left">
-                      <span className="text-sm font-medium">{auth.currentUser?.displayName || 'Usuario'}</span>
+                      <span className="text-sm font-medium">{authInstance.currentUser?.displayName || 'Usuario'}</span>
                       <span className="text-xs text-muted-foreground">
-                        {auth.currentUser?.email}
+                        {authInstance.currentUser?.email}
                       </span>
                     </div>
                   </div>
