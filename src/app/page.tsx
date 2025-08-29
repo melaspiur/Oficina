@@ -2,22 +2,55 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { empresas, type Empresa } from '@/lib/empresas';
+import { type Empresa, primaryEmpresaConfig } from '@/lib/empresas';
+import { getEmpresas, initializePrimaryFirebase } from '@/lib/services/empresas';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
-import { BotMessageSquare } from 'lucide-react';
+import { BotMessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { EmpresasAdminDialog } from '@/components/dashboard/empresas-admin-dialog';
 
 export default function CompanySelectorPage() {
   const [selectedCuit, setSelectedCuit] = React.useState<string | null>(null);
+  const [empresas, setEmpresas] = React.useState<Empresa[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isAdminDialogOpen, setIsAdminDialogOpen] = React.useState(false);
+  const [titleClickCount, setTitleClickCount] = React.useState(0);
+  
   const router = useRouter();
   const { toast } = useToast();
+  
+  // Initialize the primary connection and fetch companies
+  React.useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        initializePrimaryFirebase();
+        const empresasData = await getEmpresas();
+        // Add the primary company to the list if it's not already there
+        const primaryExists = empresasData.some(e => e.cuit === primaryEmpresaConfig.cuit);
+        const allEmpresas = primaryExists ? empresasData : [primaryEmpresaConfig, ...empresasData];
 
+        setEmpresas(allEmpresas.sort((a,b) => a.nombre.localeCompare(b.nombre)));
+      } catch (error) {
+        console.error("Error loading companies:", error);
+        toast({
+          title: "Error de Carga",
+          description: "No se pudo conectar a la base de datos principal de empresas.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, [toast]);
+  
   const empresaOptions = React.useMemo(() => {
     return empresas.map(e => ({ value: e.cuit, label: `${e.nombre} - CUIT: ${e.cuit}` }));
-  }, []);
+  }, [empresas]);
 
   const handleSelectEmpresa = (cuit: string) => {
     setSelectedCuit(cuit);
@@ -35,7 +68,6 @@ export default function CompanySelectorPage() {
 
     const empresa = empresas.find(e => e.cuit === selectedCuit);
     if (empresa) {
-      // Store the selected company's config in localStorage to be picked up by the login page
       localStorage.setItem('selectedFirebaseConfig', JSON.stringify(empresa.firebaseConfig));
       localStorage.setItem('selectedEmpresaNombre', empresa.nombre);
       router.push('/login');
@@ -48,6 +80,28 @@ export default function CompanySelectorPage() {
     }
   };
 
+  const handleTitleClick = () => {
+    const newCount = titleClickCount + 1;
+    setTitleClickCount(newCount);
+    if (newCount >= 5) {
+      setIsAdminDialogOpen(true);
+      setTitleClickCount(0); // Reset counter
+    }
+    // Optional: reset after a timeout if the sequence is not completed
+    setTimeout(() => setTitleClickCount(0), 1500);
+  };
+  
+  const onAdminDialogClose = async () => {
+      setIsAdminDialogOpen(false);
+      // Refresh the list of companies
+      setIsLoading(true);
+      const empresasData = await getEmpresas();
+      const primaryExists = empresasData.some(e => e.cuit === primaryEmpresaConfig.cuit);
+      const allEmpresas = primaryExists ? empresasData : [primaryEmpresaConfig, ...empresasData];
+      setEmpresas(allEmpresas.sort((a,b) => a.nombre.localeCompare(b.nombre)));
+      setIsLoading(false);
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-lg">
@@ -55,23 +109,38 @@ export default function CompanySelectorPage() {
           <div className="flex justify-center mb-2">
             <BotMessageSquare className="h-10 w-10 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Bienvenido al Sistema de Gestión</CardTitle>
+          <CardTitle className="text-2xl cursor-pointer" onClick={handleTitleClick}>
+            Bienvenido al Sistema de Gestión
+          </CardTitle>
           <CardDescription>Seleccione la oficina con la que desea trabajar</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-           <Combobox 
-                options={empresaOptions}
-                value={selectedCuit}
-                onValueChange={handleSelectEmpresa}
-                placeholder="Seleccione una empresa..."
-                searchPlaceholder="Buscar por nombre o CUIT..."
-                notFoundMessage="No se encontraron empresas."
-            />
-          <Button onClick={handleContinue} className="w-full" disabled={!selectedCuit}>
+           {isLoading ? (
+                <div className="flex justify-center items-center h-10">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+            ) : (
+                <Combobox 
+                    options={empresaOptions}
+                    value={selectedCuit}
+                    onValueChange={handleSelectEmpresa}
+                    placeholder="Seleccione una empresa..."
+                    searchPlaceholder="Buscar por nombre o CUIT..."
+                    notFoundMessage="No se encontraron empresas."
+                />
+            )}
+          <Button onClick={handleContinue} className="w-full" disabled={!selectedCuit || isLoading}>
             Continuar
           </Button>
         </CardContent>
       </Card>
+      
+      {isAdminDialogOpen && (
+          <EmpresasAdminDialog 
+            isOpen={isAdminDialogOpen}
+            onOpenChange={onAdminDialogClose}
+          />
+      )}
     </div>
   );
 }

@@ -16,9 +16,12 @@ export type Empresa = {
   firebaseConfig: FirebaseConfig;
 };
 
-// Array of all registered companies
-export const empresas: Empresa[] = [
-  {
+export type EmpresaWithId = Empresa & { id: string };
+
+
+// Configuration for the primary company, which holds the list of all other companies.
+// This is the bootstrap configuration.
+export const primaryEmpresaConfig: Empresa = {
     nombre: "Oficina Laspiur",
     cuit: "20165475535",
     firebaseConfig: {
@@ -29,18 +32,4 @@ export const empresas: Empresa[] = [
       messagingSenderId: "764425604004",
       appId: "1:764425604004:web:e2a3f3b4c5d6e7f8a9b0c1"
     }
-  },
-  // You can add more companies here in the future
-  // {
-  //   nombre: "Otra Oficina Contable",
-  //   cuit: "30123456789",
-  //   firebaseConfig: {
-  //     apiKey: "...",
-  //     authDomain: "...",
-  //     projectId: "...",
-  //     storageBucket: "...",
-  //     messagingSenderId: "...",
-  //     appId: "..."
-  //   }
-  // }
-];
+};
