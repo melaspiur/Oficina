@@ -36,6 +36,7 @@ const empresaSchema = z.object({
     storageBucket: z.string().min(1, "Storage Bucket es requerido."),
     messagingSenderId: z.string().min(1, "Messaging Sender ID es requerido."),
     appId: z.string().min(1, "App ID es requerida."),
+    measurementId: z.string().optional(),
   }),
 });
 
@@ -52,6 +53,7 @@ export function EmpresaDialog({ isOpen, onOpenChange, onSave, empresa }: Empresa
         storageBucket: "",
         messagingSenderId: "",
         appId: "",
+        measurementId: "",
       },
     }
   });
@@ -67,6 +69,7 @@ export function EmpresaDialog({ isOpen, onOpenChange, onSave, empresa }: Empresa
         storageBucket: "",
         messagingSenderId: "",
         appId: "",
+        measurementId: "",
       },
     });
   }, [empresa, form, isOpen]);
@@ -175,6 +178,17 @@ export function EmpresaDialog({ isOpen, onOpenChange, onSave, empresa }: Empresa
                                 <FormItem>
                                     <FormLabel>App ID *</FormLabel>
                                     <FormControl><Input {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="firebaseConfig.measurementId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Measurement ID (Opcional)</FormLabel>
+                                    <FormControl><Input {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
