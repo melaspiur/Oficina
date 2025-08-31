@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -11,12 +12,15 @@ import { Combobox } from "@/components/ui/combobox";
 import { BotMessageSquare, Loader2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EmpresasAdminDialog } from '@/components/dashboard/empresas-admin-dialog';
+import { AdminPasswordDialog } from '@/components/dashboard/admin-password-dialog';
+
 
 export default function CompanySelectorPage() {
   const [selectedCuit, setSelectedCuit] = React.useState<string | null>(null);
   const [empresas, setEmpresas] = React.useState<Empresa[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isAdminDialogOpen, setIsAdminDialogOpen] = React.useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -90,11 +94,17 @@ export default function CompanySelectorPage() {
       setIsLoading(false);
   }
 
+  const handlePasswordSuccess = () => {
+    setIsPasswordDialogOpen(false);
+    setIsAdminDialogOpen(true);
+  }
+
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-lg relative">
         <div className="absolute top-2 right-2">
-            <Button variant="ghost" size="icon" onClick={() => setIsAdminDialogOpen(true)}>
+            <Button variant="ghost" size="icon" onClick={() => setIsPasswordDialogOpen(true)}>
                 <Settings className="h-5 w-5" />
             </Button>
         </div>
@@ -128,6 +138,14 @@ export default function CompanySelectorPage() {
         </CardContent>
       </Card>
       
+       {isPasswordDialogOpen && (
+        <AdminPasswordDialog 
+            isOpen={isPasswordDialogOpen}
+            onOpenChange={setIsPasswordDialogOpen}
+            onSuccess={handlePasswordSuccess}
+        />
+       )}
+
       {isAdminDialogOpen && (
           <EmpresasAdminDialog 
             isOpen={isAdminDialogOpen}
@@ -137,3 +155,4 @@ export default function CompanySelectorPage() {
     </div>
   );
 }
+
