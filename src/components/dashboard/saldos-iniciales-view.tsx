@@ -6,6 +6,7 @@ import { AlertTriangle, FileUp, Loader2 } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { getClientes } from "@/lib/services/clientes"
@@ -91,11 +92,13 @@ export function SaldosInicialesView() {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [isDone, setIsDone] = React.useState(false);
+  const [clientesNoEncontrados, setClientesNoEncontrados] = React.useState<string[]>([]);
   const { toast } = useToast();
 
   const handleCargarSaldos = async () => {
     setIsConfirmOpen(false);
     setIsProcessing(true);
+    setClientesNoEncontrados([]);
     
     try {
         const clientes = await getClientes();
@@ -104,7 +107,7 @@ export function SaldosInicialesView() {
         const movimientos: Movimiento[] = [];
         let numeroFactura = 0;
         const fechaFactura = new Date('2025-07-31T12:00:00Z').toISOString();
-        const clientesNoEncontrados: string[] = [];
+        const noEncontrados: string[] = [];
 
         for (const line of saldosInicialesData) {
             const [codigoStr, _nombre, importeStr] = line.split(';');
@@ -125,17 +128,12 @@ export function SaldosInicialesView() {
                     descripcion: 'Saldos Iniciales'
                 });
             } else {
-                clientesNoEncontrados.push(`${codigo} - ${_nombre}`);
+                noEncontrados.push(`${String(codigo).padStart(7,'0')} - ${_nombre.trim()}`);
             }
         }
 
-        if (clientesNoEncontrados.length > 0) {
-            toast({
-                title: "Algunos clientes no fueron encontrados",
-                description: `No se procesarán facturas para: ${clientesNoEncontrados.join(', ')}. Verifique los códigos.`,
-                variant: "destructive",
-                duration: 10000,
-            });
+        if (noEncontrados.length > 0) {
+            setClientesNoEncontrados(noEncontrados);
         }
         
         if (movimientos.length > 0) {
@@ -166,7 +164,7 @@ export function SaldosInicialesView() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Carga de Saldos Iniciales</CardTitle>
@@ -198,6 +196,19 @@ export function SaldosInicialesView() {
           )}
         </CardContent>
       </Card>
+      
+      {clientesNoEncontrados.length > 0 && (
+          <Alert variant="destructive" className="max-w-2xl mx-auto">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Clientes No Encontrados</AlertTitle>
+            <AlertDescription>
+                Los siguientes clientes de la lista de saldos no fueron encontrados en la base de datos y sus saldos no fueron cargados. Por favor, verifique los códigos.
+                <ul className="list-disc pl-5 mt-2 text-xs font-mono">
+                    {clientesNoEncontrados.map(cliente => <li key={cliente}>{cliente}</li>)}
+                </ul>
+            </AlertDescription>
+         </Alert>
+      )}
 
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent>
