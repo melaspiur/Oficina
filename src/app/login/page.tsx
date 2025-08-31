@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BotMessageSquare, Loader2 } from 'lucide-react';
 import type { FirebaseConfig } from '@/lib/empresas';
+import { LoginCredentialsAlert } from '@/components/dashboard/login-credentials-alert';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [empresaNombre, setEmpresaNombre] = useState('');
+  const [showCredentials, setShowCredentials] = useState(false);
   const router = useRouter();
 
   // This effect runs on component mount to initialize Firebase for the selected company
@@ -41,6 +43,7 @@ export default function LoginPage() {
         if (cuit === '20222222223') {
             setEmail('martin@laspiur.com.ar');
             setPassword('222222');
+            setShowCredentials(true);
         }
 
         setIsLoading(false);
@@ -89,7 +92,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
@@ -99,6 +102,12 @@ export default function LoginPage() {
           <CardDescription>Ingresa tus credenciales para continuar</CardDescription>
         </CardHeader>
         <CardContent>
+           {showCredentials && (
+            <LoginCredentialsAlert 
+              email="martin@laspiur.com.ar"
+              password="222222"
+            />
+          )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo Electrónico</Label>
