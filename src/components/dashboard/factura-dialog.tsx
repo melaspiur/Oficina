@@ -43,6 +43,7 @@ const formSchema = z.object({
   }).refine((val) => parseDate(val) !== undefined, {
     message: "La fecha ingresada no es válida."
   }),
+  numero: z.coerce.number().min(1, "El número de factura no puede ser cero."),
   descripcion: z.string().max(40, "La descripción no puede tener más de 40 caracteres.").optional(),
   importe: z.coerce.number().min(0.01, "El importe debe ser mayor a cero."),
   novedadId: z.string().min(1, "Debe seleccionar una novedad."),
@@ -79,6 +80,7 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
             importe: 0,
             descripcion: "",
             fecha: "",
+            numero: 0,
             novedadId: "",
         }
     });
@@ -89,6 +91,7 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
             fecha: formatDate(new Date(factura.fecha), "dd/MM/yyyy"),
             descripcion: factura.descripcion || "",
             importe: factura.importe,
+            numero: factura.numero,
             novedadId: factura.novedadId || "",
         });
     }
@@ -142,7 +145,7 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
         <DialogHeader>
           <DialogTitle>Modificar Factura</DialogTitle>
           <DialogDescription>
-            Factura N° {String(factura.numero).padStart(8, '0')} para el cliente {cliente.nombre}.
+            Factura para el cliente {cliente.nombre}.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -183,6 +186,19 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
                                 </PopoverContent>
                                 </Popover>
                             </div>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="numero"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Número de Factura *</FormLabel>
+                            <FormControl>
+                                <Input type="number" {...field} />
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                         )}
@@ -231,19 +247,21 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
                         </FormItem>
                         )}
                     />
-                     <FormField
-                        control={form.control}
-                        name="descripcion"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Descripción (Opcional)</FormLabel>
-                            <FormControl>
-                            <Input maxLength={40} placeholder="Ej: Honorarios profesionales..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
+                     <div className="col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="descripcion"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Descripción (Opcional)</FormLabel>
+                                <FormControl>
+                                <Input maxLength={40} placeholder="Ej: Honorarios profesionales..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                     </div>
                 </div>
                 <DialogFooter className="mt-4">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
