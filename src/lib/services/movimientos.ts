@@ -56,6 +56,28 @@ export async function updateMovimiento(id: string, data: Partial<Movimiento>) {
     await updateDoc(movimientoDoc, data);
 }
 
+/**
+ * Updates an array of movement documents in a single batch.
+ * @param updates An array of objects, each with an 'id' and a 'changes' object.
+ */
+export async function updateMovimientosBatch(updates: { id: string; changes: Partial<Movimiento> }[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+
+    if (!updates || updates.length === 0) {
+        return;
+    }
+    
+    const batch = writeBatch(db);
+
+    updates.forEach(update => {
+        const docRef = doc(db, "movimientos", update.id);
+        batch.update(docRef, update.changes);
+    });
+
+    await batch.commit();
+}
+
 
 /**
  * Fetches all 'FC' (Factura) movements for a specific month and year.
@@ -141,6 +163,30 @@ export async function getMovimientosPorCliente(clienteId: string): Promise<Movim
 
     return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
 }
+
+
+/**
+ * Fetches all movements with a specific description.
+ * @param descripcion The description to search for.
+ * @returns A promise that resolves to an array of movements matching the description.
+ */
+export async function getMovimientosPorDescripcion(descripcion: string): Promise<MovimientoWithId[]> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const movimientosCollection = collection(db, "movimientos");
+
+    if (!descripcion) return [];
+
+    const q = query(
+        movimientosCollection,
+        where("descripcion", "==", descripcion)
+    );
+    
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
+}
+
 
 /**
  * Fetches all movements for a specific client within the last year.
