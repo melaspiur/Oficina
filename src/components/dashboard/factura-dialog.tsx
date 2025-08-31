@@ -21,7 +21,8 @@ import { format as formatDate } from "date-fns"
 
 import { cn } from "@/lib/utils"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import type { MovimientoWithId, ClienteWithId } from "@/lib/types"
+import { Combobox } from "@/components/ui/combobox"
+import type { MovimientoWithId, ClienteWithId, NovedadWithId } from "@/lib/types"
 
 // Helper to parse dd/mm/yyyy string to Date
 const parseDate = (dateStr: string): Date | undefined => {
@@ -44,6 +45,7 @@ const formSchema = z.object({
   }),
   descripcion: z.string().max(40, "La descripción no puede tener más de 40 caracteres.").optional(),
   importe: z.coerce.number().min(0.01, "El importe debe ser mayor a cero."),
+  novedadId: z.string().min(1, "Debe seleccionar una novedad."),
 })
 
 type FormSchema = z.infer<typeof formSchema>;
@@ -54,6 +56,7 @@ type FacturaDialogProps = {
   onSave: (facturaId: string, data: FormSchema) => void
   factura: MovimientoWithId | null
   cliente: ClienteWithId | null
+  novedades: NovedadWithId[]
 }
 
 const formatNumber = (value: number) => {
@@ -63,8 +66,12 @@ const formatNumber = (value: number) => {
   }).format(value);
 };
 
-export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente }: FacturaDialogProps) {
+export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, novedades }: FacturaDialogProps) {
     const [displayImporte, setDisplayImporte] = React.useState("0,00");
+
+    const novedadOptions = React.useMemo(() => 
+        novedades.map(n => ({ value: n.id, label: `${n.codigo} - ${n.nombre}` })),
+    [novedades]);
 
     const form = useForm<FormSchema>({
         resolver: zodResolver(formSchema),
@@ -72,6 +79,7 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente }
             importe: 0,
             descripcion: "",
             fecha: "",
+            novedadId: "",
         }
     });
 
@@ -80,7 +88,8 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente }
         form.reset({
             fecha: formatDate(new Date(factura.fecha), "dd/MM/yyyy"),
             descripcion: factura.descripcion || "",
-            importe: factura.importe
+            importe: factura.importe,
+            novedadId: factura.novedadId || "",
         });
     }
   }, [isOpen, factura, form]);
@@ -180,6 +189,24 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente }
                     />
                     <FormField
                         control={form.control}
+                        name="novedadId"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Novedad *</FormLabel>
+                            <Combobox
+                                options={novedadOptions}
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                placeholder="Seleccione una novedad..."
+                                searchPlaceholder="Buscar novedad..."
+                                notFoundMessage="No se encontraron novedades."
+                            />
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
                         name="importe"
                         render={({ field }) => (
                         <FormItem>
@@ -204,21 +231,19 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente }
                         </FormItem>
                         )}
                     />
-                    <div className="col-span-2">
-                        <FormField
-                            control={form.control}
-                            name="descripcion"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Descripción (Opcional)</FormLabel>
-                                <FormControl>
-                                <Input maxLength={40} placeholder="Ej: Honorarios profesionales..." {...field} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
+                     <FormField
+                        control={form.control}
+                        name="descripcion"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Descripción (Opcional)</FormLabel>
+                            <FormControl>
+                            <Input maxLength={40} placeholder="Ej: Honorarios profesionales..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                 </div>
                 <DialogFooter className="mt-4">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

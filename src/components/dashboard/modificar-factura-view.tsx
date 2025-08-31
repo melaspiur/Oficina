@@ -12,13 +12,15 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { getMovimientosFacturasPorCliente, updateMovimiento } from "@/lib/services/movimientos"
 import { getClientes } from "@/lib/services/clientes"
+import { getNovedades } from "@/lib/services/novedades"
 import { FacturaDialog } from "./factura-dialog"
-import type { MovimientoWithId, ClienteWithId } from "@/lib/types"
+import type { MovimientoWithId, ClienteWithId, NovedadWithId } from "@/lib/types"
 
 export function ModificarFacturaView() {
-  const [isLoading, setIsLoading] = React.useState(false)
+  const [isLoading, setIsLoading] = React.useState(true)
   const [isFetching, setIsFetching] = React.useState(false);
   const [allClientes, setAllClientes] = React.useState<ClienteWithId[]>([])
+  const [allNovedades, setAllNovedades] = React.useState<NovedadWithId[]>([]);
   const [facturasCliente, setFacturasCliente] = React.useState<MovimientoWithId[]>([])
   const [selectedClienteId, setSelectedClienteId] = React.useState<string | null>(null);
   
@@ -34,19 +36,23 @@ export function ModificarFacturaView() {
   }, [allClientes])
 
   React.useEffect(() => {
-    async function fetchClientesData() {
+    async function fetchData() {
         setIsLoading(true);
         try {
-            const clientes = await getClientes();
+            const [clientes, novedades] = await Promise.all([
+                getClientes(),
+                getNovedades()
+            ]);
             setAllClientes(clientes);
+            setAllNovedades(novedades);
         } catch(error) {
-            console.error("Error fetching clients:", error);
-            toast({ title: "Error", description: "No se pudieron cargar los clientes.", variant: "destructive" });
+            console.error("Error fetching data:", error);
+            toast({ title: "Error", description: "No se pudieron cargar los datos iniciales.", variant: "destructive" });
         } finally {
             setIsLoading(false);
         }
     }
-    fetchClientesData();
+    fetchData();
   }, [toast]);
   
   const handleSelectCliente = async (clienteId: string) => {
@@ -205,6 +211,7 @@ export function ModificarFacturaView() {
             onSave={handleSaveFactura}
             factura={facturaToEdit}
             cliente={selectedCliente}
+            novedades={allNovedades}
         />
       )}
     </div>
