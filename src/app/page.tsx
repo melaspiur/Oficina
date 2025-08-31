@@ -73,6 +73,7 @@ export default function CompanySelectorPage() {
     if (empresa) {
       localStorage.setItem('selectedFirebaseConfig', JSON.stringify(empresa.firebaseConfig));
       localStorage.setItem('selectedEmpresaNombre', empresa.nombre);
+      localStorage.setItem('selectedEmpresaCuit', empresa.cuit);
       router.push('/login');
     } else {
        toast({
@@ -155,4 +156,3 @@ export default function CompanySelectorPage() {
     </div>
   );
 }
-

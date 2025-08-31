@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -24,6 +25,8 @@ export default function LoginPage() {
   useEffect(() => {
     const configStr = localStorage.getItem('selectedFirebaseConfig');
     const nombre = localStorage.getItem('selectedEmpresaNombre');
+    const cuit = localStorage.getItem('selectedEmpresaCuit');
+
 
     if (!configStr || !nombre) {
       // If no company is selected, redirect to the company selection page
@@ -33,6 +36,13 @@ export default function LoginPage() {
         const config: FirebaseConfig = JSON.parse(configStr);
         initializeFirebaseClient(config);
         setEmpresaNombre(nombre);
+        
+        // Pre-fill login credentials for the specific test company
+        if (cuit === '20222222223') {
+            setEmail('martin@laspiur.com.ar');
+            setPassword('222222');
+        }
+
         setIsLoading(false);
       } catch (e) {
         console.error("Failed to parse Firebase config or initialize app:", e);
