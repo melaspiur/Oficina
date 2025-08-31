@@ -1,6 +1,6 @@
 import { getClientDb } from "@/lib/firebase";
 import type { Novedad, NovedadWithId } from "@/lib/types";
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 
 export async function getNovedades(): Promise<NovedadWithId[]> {
     const db = getClientDb();
@@ -30,4 +30,15 @@ export async function deleteNovedad(id: string) {
     if (!db) throw new Error("Firestore is not initialized");
     const novedadDoc = doc(db, "novedades", id);
     await deleteDoc(novedadDoc);
+}
+
+export async function deleteNovedadesBatch(ids: string[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const batch = writeBatch(db);
+    ids.forEach(id => {
+        const docRef = doc(db, "novedades", id);
+        batch.delete(docRef);
+    });
+    await batch.commit();
 }

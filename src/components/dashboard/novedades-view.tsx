@@ -11,89 +11,114 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react"
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { NovedadDialog } from "./novedad-dialog"
 import type { Novedad, NovedadWithId, Meses } from "@/lib/types"
-import { addNovedad, getNovedades, updateNovedad, deleteNovedad } from "@/lib/services/novedades"
+import { addNovedad, getNovedades, updateNovedad, deleteNovedad, deleteNovedadesBatch } from "@/lib/services/novedades"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 const allMonthsTrue: Meses = { enero: true, febrero: true, marzo: true, abril: true, mayo: true, junio: true, julio: true, agosto: true, septiembre: true, octubre: true, noviembre: true, diciembre: true };
 const onlyAugustTrue: Meses = { enero: false, febrero: false, marzo: false, abril: false, mayo: false, junio: false, julio: false, agosto: true, septiembre: false, octubre: false, noviembre: false, diciembre: false };
 
-const initialNovedades: NovedadWithId[] = [
-    { id: "1", codigo: 1, nombre: "MENSUAL IVA/IIBB", meses: allMonthsTrue, importe: 80000 },
-    { id: "2", codigo: 2, nombre: "MENSUALIZADO LABOR", meses: allMonthsTrue, importe: 80000 },
-    { id: "3", codigo: 3, nombre: "MENSUALIZADO MONOT", meses: allMonthsTrue, importe: 40000 },
-    { id: "4", codigo: 4, nombre: "MENSUALIZADO GLOBA", meses: allMonthsTrue, importe: 1 },
-    { id: "5", codigo: 5, nombre: "LABORAL DOMESTICO", meses: allMonthsTrue, importe: 14000 },
-    { id: "6", codigo: 6, nombre: "MONOTRIBUTO REDUCI", meses: allMonthsTrue, importe: 20000 },
-    { id: "7", codigo: 7, nombre: "VACANTE", meses: allMonthsTrue, importe: 1 },
-    { id: "8", codigo: 8, nombre: "VACANTE", meses: allMonthsTrue, importe: 1 },
-    { id: "9", codigo: 9, nombre: "TRABAJOS VARIOS", meses: allMonthsTrue, importe: 1 },
-    { id: "10", codigo: 10, nombre: "RECATEG.MONOTRIBUT", meses: onlyAugustTrue, importe: 28000 },
-    { id: "11", codigo: 11, nombre: "RECAT. MONOTR. RED", meses: onlyAugustTrue, importe: 14000 },
-    { id: "12", codigo: 12, nombre: "TRAMITE RED.ALIC.B", meses: onlyAugustTrue, importe: 1 },
-    { id: "13", codigo: 13, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
-    { id: "14", codigo: 14, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
-    { id: "15", codigo: 15, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
-    { id: "16", codigo: 16, nombre: "IP2 GRUESA SIEMBRA", meses: onlyAugustTrue, importe: 25000 },
-    { id: "17", codigo: 17, nombre: "IP1 FINA-EXISTENCI", meses: onlyAugustTrue, importe: 45000 },
-    { id: "18", codigo: 18, nombre: "IP3 EXISTENCIA TRI", meses: onlyAugustTrue, importe: 1 },
-    { id: "19", codigo: 19, nombre: "IP4 COSECHADO FINA", meses: onlyAugustTrue, importe: 1 },
-    { id: "20", codigo: 20, nombre: "IP5 COESCHADO GRUE", meses: onlyAugustTrue, importe: 1 },
-    { id: "21", codigo: 21, nombre: "DDJJ INGR BRUTOS1", meses: onlyAugustTrue, importe: 1 },
-    { id: "22", codigo: 22, nombre: "DDJJ GANANC./B.PER", meses: onlyAugustTrue, importe: 1 },
-    { id: "23", codigo: 23, nombre: "BALANCE", meses: onlyAugustTrue, importe: 1 },
-    { id: "24", codigo: 24, nombre: "DDJJ ING. BRUT. RE", meses: onlyAugustTrue, importe: 1 },
-    { id: "25", codigo: 25, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
-    { id: "26", codigo: 26, nombre: "CERTIF.CONTABLE", meses: onlyAugustTrue, importe: 1 },
-    { id: "27", codigo: 27, nombre: "CERTIF.DE SERVICIO", meses: onlyAugustTrue, importe: 1 },
-    { id: "28", codigo: 28, nombre: "CONF. BALANCE Y GA", meses: onlyAugustTrue, importe: 1 },
-    { id: "29", codigo: 29, nombre: "CONT.FISCAL AGROP.", meses: onlyAugustTrue, importe: 25000 },
-    { id: "30", codigo: 30, nombre: "REG. REGUL. ACTIVO", meses: onlyAugustTrue, importe: 1 },
-    { id: "31", codigo: 31, nombre: "CARPETA BANCO", meses: onlyAugustTrue, importe: 1 },
-    { id: "32", codigo: 32, nombre: "MANIFESTACION BANC", meses: onlyAugustTrue, importe: 1 },
+const initialNovedades: Novedad[] = [
+    { codigo: 1, nombre: "MENSUAL IVA/IIBB", meses: allMonthsTrue, importe: 80000 },
+    { codigo: 2, nombre: "MENSUALIZADO LABOR", meses: allMonthsTrue, importe: 80000 },
+    { codigo: 3, nombre: "MENSUALIZADO MONOT", meses: allMonthsTrue, importe: 40000 },
+    { codigo: 4, nombre: "MENSUALIZADO GLOBA", meses: allMonthsTrue, importe: 1 },
+    { codigo: 5, nombre: "LABORAL DOMESTICO", meses: allMonthsTrue, importe: 14000 },
+    { codigo: 6, nombre: "MONOTRIBUTO REDUCI", meses: allMonthsTrue, importe: 20000 },
+    { codigo: 7, nombre: "VACANTE", meses: allMonthsTrue, importe: 1 },
+    { codigo: 8, nombre: "VACANTE", meses: allMonthsTrue, importe: 1 },
+    { codigo: 9, nombre: "TRABAJOS VARIOS", meses: allMonthsTrue, importe: 1 },
+    { codigo: 10, nombre: "RECATEG.MONOTRIBUT", meses: onlyAugustTrue, importe: 28000 },
+    { codigo: 11, nombre: "RECAT. MONOTR. RED", meses: onlyAugustTrue, importe: 14000 },
+    { codigo: 12, nombre: "TRAMITE RED.ALIC.B", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 13, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 14, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 15, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 16, nombre: "IP2 GRUESA SIEMBRA", meses: onlyAugustTrue, importe: 25000 },
+    { codigo: 17, nombre: "IP1 FINA-EXISTENCI", meses: onlyAugustTrue, importe: 45000 },
+    { codigo: 18, nombre: "IP3 EXISTENCIA TRI", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 19, nombre: "IP4 COSECHADO FINA", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 20, nombre: "IP5 COESCHADO GRUE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 21, nombre: "DDJJ INGR BRUTOS1", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 22, nombre: "DDJJ GANANC./B.PER", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 23, nombre: "BALANCE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 24, nombre: "DDJJ ING. BRUT. RE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 25, nombre: "VACANTE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 26, nombre: "CERTIF.CONTABLE", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 27, nombre: "CERTIF.DE SERVICIO", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 28, nombre: "CONF. BALANCE Y GA", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 29, nombre: "CONT.FISCAL AGROP.", meses: onlyAugustTrue, importe: 25000 },
+    { codigo: 30, nombre: "REG. REGUL. ACTIVO", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 31, nombre: "CARPETA BANCO", meses: onlyAugustTrue, importe: 1 },
+    { codigo: 32, nombre: "MANIFESTACION BANC", meses: onlyAugustTrue, importe: 1 },
 ];
 
 
 export function NovedadesView() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-  const [novedades, setNovedades] = React.useState<NovedadWithId[]>(initialNovedades)
+  const [novedades, setNovedades] = React.useState<NovedadWithId[]>([])
   const [selectedNovedad, setSelectedNovedad] = React.useState<NovedadWithId | null>(null);
   const [novedadToDelete, setNovedadToDelete] = React.useState<NovedadWithId | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const { toast } = useToast();
 
-  const fetchNovedades = async () => {
+ const fetchNovedades = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const novedadesData = await getNovedades();
-       if (novedadesData.length === 0) {
-          const seedPromises = initialNovedades.map(c => addNovedad(c));
-          await Promise.all(seedPromises);
-          setNovedades(initialNovedades);
-      } else {
-          setNovedades(novedadesData);
+      let novedadesData = await getNovedades();
+
+      // If database is empty, seed it with initial data.
+      if (novedadesData.length === 0) {
+        toast({ title: "Inicializando Novedades", description: "Cargando datos por primera vez..." });
+        const seedPromises = initialNovedades.map(c => addNovedad(c));
+        await Promise.all(seedPromises);
+        novedadesData = await getNovedades(); 
       }
+
+      // Check for and remove duplicates.
+      const seenCodigos = new Map<number, NovedadWithId>();
+      const duplicatesToDelete: string[] = [];
+
+      novedadesData.forEach(novedad => {
+        if (seenCodigos.has(novedad.codigo)) {
+          duplicatesToDelete.push(novedad.id);
+        } else {
+          seenCodigos.set(novedad.codigo, novedad);
+        }
+      });
+
+      if (duplicatesToDelete.length > 0) {
+        await deleteNovedadesBatch(duplicatesToDelete);
+        toast({
+          title: "Duplicados Eliminados",
+          description: `Se han eliminado ${duplicatesToDelete.length} novedades duplicadas.`,
+          variant: "default",
+        });
+      }
+
+      const cleanNovedades = Array.from(seenCodigos.values()).sort((a,b) => a.codigo - b.codigo);
+      setNovedades(cleanNovedades);
+
     } catch (error) {
-      console.error("Error fetching or seeding novedades:", error);
+      console.error("Error fetching, seeding, or cleaning novedades:", error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar las novedades.",
+        description: "No se pudieron cargar ni limpiar las novedades.",
         variant: "destructive",
       });
-      setNovedades(initialNovedades);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   React.useEffect(() => {
     fetchNovedades();
-  }, []);
+  }, [fetchNovedades]);
 
   const handleSaveNovedad = async (novedad: Novedad) => {
     try {
@@ -184,7 +209,9 @@ export function NovedadesView() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">Cargando novedades...</TableCell>
+                <TableCell colSpan={5} className="text-center h-24">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                </TableCell>
               </TableRow>
             ) : novedades.length === 0 ? (
                <TableRow>
@@ -256,5 +283,3 @@ export function NovedadesView() {
     </div>
   )
 }
-
-    
