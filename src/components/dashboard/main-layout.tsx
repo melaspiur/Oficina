@@ -88,15 +88,19 @@ export function MainLayout() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = React.useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = React.useState(true);
   const [authInstance, setAuthInstance] = React.useState<Auth | null>(null);
+  const [empresaNombre, setEmpresaNombre] = React.useState('');
   const router = useRouter();
 
   React.useEffect(() => {
     const configStr = localStorage.getItem('selectedFirebaseConfig');
-    if (!configStr) {
+    const nombre = localStorage.getItem('selectedEmpresaNombre');
+    if (!configStr || !nombre) {
       router.replace('/');
       return;
     }
     
+    setEmpresaNombre(nombre);
+
     try {
         const config: FirebaseConfig = JSON.parse(configStr);
         const { auth } = initializeFirebaseClient(config);
@@ -123,6 +127,7 @@ export function MainLayout() {
       await signOut(authInstance);
       localStorage.removeItem('selectedFirebaseConfig');
       localStorage.removeItem('selectedEmpresaNombre');
+      localStorage.removeItem('selectedEmpresaCuit');
       router.push('/');
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -249,7 +254,7 @@ export function MainLayout() {
                     <BotMessageSquare className="h-6 w-6 text-primary" />
                 </div>
                 <h2 className="text-lg font-semibold tracking-tight font-headline">
-                  Oficina Virtual
+                  {empresaNombre || 'Oficina Virtual'}
                 </h2>
             </div>
           </Button>
