@@ -5,9 +5,10 @@ import * as React from "react"
 import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { CalendarIcon, FileDown, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import * as XLSX from "xlsx"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -175,6 +176,52 @@ export function FacturacionMensualView() {
           currency: 'ARS',
       }).format(value);
   };
+  
+   const handleExportExcel = () => {
+    if (!facturacionResult) return;
+
+    const dataForSheet = facturacionResult.clientes.flatMap(cliente =>
+      cliente.novedades.map(novedad => ({
+        'Cod. Cliente': cliente.clienteCodigo,
+        'Nombre Cliente': cliente.clienteNombre,
+        'Cod. Novedad': novedad.novedadCodigo,
+        'Nombre Novedad': novedad.novedadNombre,
+        'Cantidad': novedad.cantidad,
+        'Importe': novedad.importe,
+        'Nro. Factura': novedad.numeroFactura,
+      }))
+    );
+    
+    dataForSheet.push({
+      // @ts-ignore
+      'Nombre Cliente': 'Total General',
+      'Importe': facturacionResult.totalGeneral,
+    });
+
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+    worksheet['!cols'] = [
+      { wch: 10 },
+      { wch: 35 },
+      { wch: 10 },
+      { wch: 35 },
+      { wch: 10 },
+      { wch: 15 },
+      { wch: 15 },
+    ];
+    
+    dataForSheet.forEach((_row, index) => {
+        const i = index + 2; // XLSX rows are 1-based, and we have a header
+        if(worksheet[`F${i}`]) worksheet[`F${i}`].z = '$ #,##0.00';
+    });
+
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "FacturacionMensual");
+
+    const fileName = `Facturacion_${facturacionResult.mes}_${format(new Date(facturacionResult.fechaFacturacion), "yyyy-MM-dd")}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
 
 
   if (facturacionResult) {
@@ -189,7 +236,13 @@ export function FacturacionMensualView() {
                             Resumen de la facturación generada para el mes de <span className="font-semibold capitalize">{facturacionResult.mes}</span> con fecha <span className="font-semibold">{format(new Date(facturacionResult.fechaFacturacion), "dd/MM/yyyy")}</span>.
                         </CardDescription>
                     </div>
-                    <Button onClick={() => setFacturacionResult(null)}>Volver</Button>
+                    <div className="flex gap-2">
+                         <Button variant="outline" onClick={handleExportExcel}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Exportar a Excel
+                        </Button>
+                        <Button onClick={() => setFacturacionResult(null)}>Volver</Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
