@@ -50,8 +50,6 @@ import {
   KeyRound,
   Loader2,
   Undo2,
-  FileUp,
-  ListRestart,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -74,8 +72,6 @@ import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 import { ChangePasswordDialog } from './change-password-dialog';
 import { DesaplicarReciboView } from './desaplicar-recibo-view';
 import { ModificarFacturaView } from './modificar-factura-view';
-import { SaldosInicialesView } from './saldos-iniciales-view';
-import { ReordenamientoView } from './reordenamiento-view';
 import type { FirebaseConfig } from '@/lib/empresas';
 
 export function MainLayout() {
@@ -192,10 +188,6 @@ export function MainLayout() {
         return <DesaplicarReciboView />;
       case 'ajustes-comprobantes':
         return <ComprobantesView />;
-      case 'ajustes-saldos-iniciales':
-        return <SaldosInicialesView />;
-      case 'ajustes-reordenamiento':
-        return <ReordenamientoView />;
       case 'informes-facturacion-mensual':
         return <InformeFacturacionMensualView />;
       case 'informes-facturacion-cliente':
@@ -228,8 +220,6 @@ export function MainLayout() {
      }
       if (activeView.startsWith('ajustes-')) {
         if (activeView === 'ajustes-comprobantes') return "Comprobantes";
-        if (activeView === 'ajustes-saldos-iniciales') return "Carga de Saldos Iniciales";
-        if (activeView === 'ajustes-reordenamiento') return "Reordenamiento de Asignaciones";
      }
       if (activeView.startsWith('informes-')) {
         if (activeView === 'informes-facturacion-mensual') return "Informe de Facturación Mensual";
@@ -521,22 +511,6 @@ export function MainLayout() {
                         isActive={activeView === 'ajustes-comprobantes'}>
                         <FileKey />
                         <span>Comprobantes</span>
-                        </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                     <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                        onClick={() => setActiveView('ajustes-saldos-iniciales')} 
-                        isActive={activeView === 'ajustes-saldos-iniciales'}>
-                        <FileUp />
-                        <span>Saldos Iniciales</span>
-                        </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                    <SidebarMenuSubItem>
-                        <SidebarMenuSubButton 
-                        onClick={() => setActiveView('ajustes-reordenamiento')} 
-                        isActive={activeView === 'ajustes-reordenamiento'}>
-                        <ListRestart />
-                        <span>Reordenamiento</span>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                 </SidebarMenuSub>
