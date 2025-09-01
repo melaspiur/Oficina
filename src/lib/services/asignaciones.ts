@@ -87,3 +87,25 @@ export async function deleteAsignacionesBatch(ids: string[]) {
     });
     await batch.commit();
 }
+
+
+/**
+ * Deletes all documents from the 'asignaciones' collection.
+ * USE WITH CAUTION.
+ */
+export async function deleteAllAsignaciones() {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const asignacionesCollection = collection(db, "asignaciones");
+    const snapshot = await getDocs(asignacionesCollection);
+    
+    if (snapshot.empty) {
+        return; // Nothing to delete
+    }
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(d => {
+        batch.delete(d.ref);
+    });
+    await batch.commit();
+}
