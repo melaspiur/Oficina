@@ -7,449 +7,307 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
-
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Trash2, PlusCircle, Loader2, Edit } from "lucide-react"
+import type { ClienteWithId, NovedadWithId, AsignacionViewModel, AsignacionWithId } from "@/lib/types"
 import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
-import { getAsignaciones, addAsignacionesBatch } from "@/lib/services/asignaciones"
-
-import type { ClienteWithId, NovedadWithId, Asignacion } from "@/lib/types"
-
-const initialAssignmentsData = `
-0000017;EL REENCUENTRO S.A.;22;DDJJ GANANC./B.PERS.;3100000
-0000019;FABBIAN FABIO LUIS;22;DDJJ GANANC./B.PERS.;193000
-0000020;FABBIAN LILIANA ROSA;22;DDJJ GANANC./B.PERS.;193000
-0000021;FABBIAN S.C.A.;4;MENSUALIZADO GLOBAL;380000
-0000021;FABBIAN S.C.A.;23;BALANCE;3092832.92
-0000036;INCHAUSPE HORACIO HECTOR;1;MENSUAL IVA/IIBB;1
-0000036;INCHAUSPE HORACIO HECTOR;22;DDJJ GANANC./B.PERS.;825000
-0000036;INCHAUSPE HORACIO HECTOR;16;IP2 GRUESA SIEMBRA;1
-0000036;INCHAUSPE HORACIO HECTOR;17;IP1 FINA-EXISTENCIA;1
-0000036;INCHAUSPE HORACIO HECTOR;29;CONT.FISCAL AGROP.;1
-0000037;IRIARTE DANIEL HORACIO;4;MENSUALIZADO GLOBAL;320000
-0000044;LACOMBE JOSE LUIS;4;MENSUALIZADO GLOBAL;460000
-0000045;LEIBOLD LUIS JUAN;1;MENSUAL IVA/IIBB;1
-0000045;LEIBOLD LUIS JUAN;22;DDJJ GANANC./B.PERS.;825000
-0000045;LEIBOLD LUIS JUAN;16;IP2 GRUESA SIEMBRA;1
-0000045;LEIBOLD LUIS JUAN;17;IP1 FINA-EXISTENCIA;1
-0000045;LEIBOLD LUIS JUAN;29;CONT.FISCAL AGROP.;1
-0000048;LIENAHRD ERNESTO DOMINGO;1;MENSUAL IVA/IIBB;1
-0000048;LIENAHRD ERNESTO DOMINGO;22;DDJJ GANANC./B.PERS.;630000
-0000048;LIENAHRD ERNESTO DOMINGO;16;IP2 GRUESA SIEMBRA;1
-0000048;LIENAHRD ERNESTO DOMINGO;17;IP1 FINA-EXISTENCIA;1
-0000048;LIENAHRD ERNESTO DOMINGO;29;CONT.FISCAL AGROP.;1
-0000049;LOPEZ OMAR FERNANDO;3;MENSUALIZADO MONOTRI;1
-0000049;LOPEZ OMAR FERNANDO;10;RECATEG.MONOTRIBUTO;1
-0000049;LOPEZ OMAR FERNANDO;10;RECATEG.MONOTRIBUTO;1
-0000052;MAUGERI BRUNO;4;MENSUALIZADO GLOBAL;35000
-0000052;MAUGERI BRUNO;2;MENSUALIZADO LABORAL;1
-0000052;MAUGERI BRUNO;22;DDJJ GANANC./B.PERS.;1450000
-0000052;MAUGERI BRUNO;5;LABORAL DOMESTICO;1
-0000052;MAUGERI BRUNO;29;CONT.FISCAL AGROP.;1
-0000056;MILLA HECTOR OSCAR;22;DDJJ GANANC./B.PERS.;2450000
-0000064;PAGGI NORBERTO RAUL;1;MENSUAL IVA/IIBB;1
-0000064;PAGGI NORBERTO RAUL;22;DDJJ GANANC./B.PERS.;326900
-0000064;PAGGI NORBERTO RAUL;16;IP2 GRUESA SIEMBRA;1
-0000064;PAGGI NORBERTO RAUL;17;IP1 FINA-EXISTENCIA;1
-0000064;PAGGI NORBERTO RAUL;29;CONT.FISCAL AGROP.;1
-0000067;PI¥EIRO MARIANO ALFREDO;21;DDJJ INGR BRUTOS1;367900
-0000075;ROSSO ARTEAGA MARIA MERCEDES;22;DDJJ GANANC./B.PERS.;965000
-0000082;SOCIEDAD RURAL ADOLFO ALSINA;4;MENSUALIZADO GLOBAL;130000
-0000086;VILLORIA CARLOS MARIO;3;MENSUALIZADO MONOTRI;1
-0000086;VILLORIA CARLOS MARIO;10;RECATEG.MONOTRIBUTO;1
-0000086;VILLORIA CARLOS MARIO;10;RECATEG.MONOTRIBUTO;1
-0000094;HEIM RUBEN;1;MENSUAL IVA/IIBB;1
-0000094;HEIM RUBEN;22;DDJJ GANANC./B.PERS.;630000
-0000094;HEIM RUBEN;16;IP2 GRUESA SIEMBRA;1
-0000094;HEIM RUBEN;17;IP1 FINA-EXISTENCIA;1
-0000097;MARTIN SERGIO DANIEL;6;MONOTRIBUTO REDUCIDO;1
-0000097;MARTIN SERGIO DANIEL;11;RECAT. MONOTR. REDUC;1
-0000097;MARTIN SERGIO DANIEL;11;RECAT. MONOTR. REDUC;1
-0000100;TRABUCCO GABRIELA;1;MENSUAL IVA/IIBB;1
-0000100;TRABUCCO GABRIELA;22;DDJJ GANANC./B.PERS.;630000
-0000100;TRABUCCO GABRIELA;5;LABORAL DOMESTICO;1
-0000103;LA CANAZAYA S.A.;4;MENSUALIZADO GLOBAL;22500
-0000103;LA CANAZAYA S.A.;23;BALANCE;1
-0000104;ITCHART RUBEN DANIEL;4;MENSUALIZADO GLOBAL;47000
-0000108;CANERO JAQUELINA;1;MENSUAL IVA/IIBB;1
-0000108;CANERO JAQUELINA;22;DDJJ GANANC./B.PERS.;460000
-0000108;CANERO JAQUELINA;29;CONT.FISCAL AGROP.;1
-0000108;CANERO JAQUELINA;5;LABORAL DOMESTICO;1
-0000109;CANERO MARIO ALBERTO;3;MENSUALIZADO MONOTRI;1
-0000109;CANERO MARIO ALBERTO;22;DDJJ GANANC./B.PERS.;785000
-0000109;CANERO MARIO ALBERTO;10;RECATEG.MONOTRIBUTO;1
-0000109;CANERO MARIO ALBERTO;10;RECATEG.MONOTRIBUTO;1
-0000109;CANERO MARIO ALBERTO;29;CONT.FISCAL AGROP.;1
-0000118;GUIDO CECILIA NOEMI;3;MENSUALIZADO MONOTRI;1
-0000118;GUIDO CECILIA NOEMI;10;RECATEG.MONOTRIBUTO;1
-0000118;GUIDO CECILIA NOEMI;10;RECATEG.MONOTRIBUTO;1
-0000121;LANZILOTTA MARCELO RUBEN;3;MENSUALIZADO MONOTRI;1
-0000121;LANZILOTTA MARCELO RUBEN;10;RECATEG.MONOTRIBUTO;1
-0000121;LANZILOTTA MARCELO RUBEN;10;RECATEG.MONOTRIBUTO;1
-0000128;SAGASTI GUILLERMO RICARDO;3;MENSUALIZADO MONOTRI;1
-0000128;SAGASTI GUILLERMO RICARDO;10;RECATEG.MONOTRIBUTO;1
-0000128;SAGASTI GUILLERMO RICARDO;10;RECATEG.MONOTRIBUTO;1
-0000129;SARSUR JORGE SUC.;4;MENSUALIZADO GLOBAL;22500
-0000129;SARSUR JORGE SUC.;29;CONT.FISCAL AGROP.;1
-0000129;SARSUR JORGE SUC.;22;DDJJ GANANC./B.PERS.;365000
-0000136;CAMIO PABLO EDUARDO;1;MENSUAL IVA/IIBB;1
-0000136;CAMIO PABLO EDUARDO;22;DDJJ GANANC./B.PERS.;785000
-0000136;CAMIO PABLO EDUARDO;2;MENSUALIZADO LABORAL;1
-0000137;FIGUEROA FERNANDO EDUARDO;3;MENSUALIZADO MONOTRI;1
-0000137;FIGUEROA FERNANDO EDUARDO;10;RECATEG.MONOTRIBUTO;1
-0000137;FIGUEROA FERNANDO EDUARDO;10;RECATEG.MONOTRIBUTO;1
-0000139;CILLEY S.A.;4;MENSUALIZADO GLOBAL;540000
-0000139;CILLEY S.A.;23;BALANCE;10137000
-0000141;SCHMIDT ELISABET;3;MENSUALIZADO MONOTRI;1
-0000141;SCHMIDT ELISABET;10;RECATEG.MONOTRIBUTO;1
-0000141;SCHMIDT ELISABET;10;RECATEG.MONOTRIBUTO;1
-0000142;CANERO ALEJANDRA;3;MENSUALIZADO MONOTRI;1
-0000142;CANERO ALEJANDRA;22;DDJJ GANANC./B.PERS.;365000
-0000142;CANERO ALEJANDRA;10;RECATEG.MONOTRIBUTO;1
-0000142;CANERO ALEJANDRA;10;RECATEG.MONOTRIBUTO;1
-0000142;CANERO ALEJANDRA;29;CONT.FISCAL AGROP.;1
-0000144;MUZIO ALEJANDRO;22;DDJJ GANANC./B.PERS.;825000
-0000144;MUZIO ALEJANDRO;29;CONT.FISCAL AGROP.;1
-0000145;LACOMBE JULIO OSVALDO;3;MENSUALIZADO MONOTRI;1
-0000145;LACOMBE JULIO OSVALDO;10;RECATEG.MONOTRIBUTO;1
-0000145;LACOMBE JULIO OSVALDO;10;RECATEG.MONOTRIBUTO;1
-0000147;SCHMIDT ADRIAN MARCELO;3;MENSUALIZADO MONOTRI;1
-0000147;SCHMIDT ADRIAN MARCELO;10;RECATEG.MONOTRIBUTO;1
-0000147;SCHMIDT ADRIAN MARCELO;10;RECATEG.MONOTRIBUTO;1
-0000148;ELIZONDO MONICA PATRICIA;3;MENSUALIZADO MONOTRI;1
-0000148;ELIZONDO MONICA PATRICIA;10;RECATEG.MONOTRIBUTO;1
-0000148;ELIZONDO MONICA PATRICIA;10;RECATEG.MONOTRIBUTO;1
-0000149;INCHAUSPE OSCAR PEDRO;1;MENSUAL IVA/IIBB;1
-0000149;INCHAUSPE OSCAR PEDRO;22;DDJJ GANANC./B.PERS.;665000
-0000149;INCHAUSPE OSCAR PEDRO;16;IP2 GRUESA SIEMBRA;1
-0000149;INCHAUSPE OSCAR PEDRO;17;IP1 FINA-EXISTENCIA;1
-0000149;INCHAUSPE OSCAR PEDRO;29;CONT.FISCAL AGROP.;1
-0000149;INCHAUSPE OSCAR PEDRO;3;MENSUALIZADO MONOTRI;1
-0000149;INCHAUSPE OSCAR PEDRO;10;RECATEG.MONOTRIBUTO;1
-0000149;INCHAUSPE OSCAR PEDRO;10;RECATEG.MONOTRIBUTO;1
-0000150;DURAN SUSANA CRISTINA;3;MENSUALIZADO MONOTRI;1
-0000150;DURAN SUSANA CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000150;DURAN SUSANA CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000152;MUZIO ESTEBAN MARTIN;1;MENSUAL IVA/IIBB;1
-0000152;MUZIO ESTEBAN MARTIN;2;MENSUALIZADO LABORAL;1
-0000152;MUZIO ESTEBAN MARTIN;22;DDJJ GANANC./B.PERS.;825000
-0000152;MUZIO ESTEBAN MARTIN;5;LABORAL DOMESTICO;1
-0000152;MUZIO ESTEBAN MARTIN;16;IP2 GRUESA SIEMBRA;1
-0000152;MUZIO ESTEBAN MARTIN;17;IP1 FINA-EXISTENCIA;1
-0000152;MUZIO ESTEBAN MARTIN;29;CONT.FISCAL AGROP.;1
-0000154;BLACHET ARIEL VICTOR;3;MENSUALIZADO MONOTRI;1
-0000154;BLACHET ARIEL VICTOR;10;RECATEG.MONOTRIBUTO;1
-0000154;BLACHET ARIEL VICTOR;10;RECATEG.MONOTRIBUTO;1
-0000156;LASPIUR JUAN CARLOS;1;MENSUAL IVA/IIBB;1
-0000156;LASPIUR JUAN CARLOS;2;MENSUALIZADO LABORAL;1
-0000156;LASPIUR JUAN CARLOS;22;DDJJ GANANC./B.PERS.;630000
-0000161;FARMACIA SARSUR S.C.S.;4;MENSUALIZADO GLOBAL;310000
-0000161;FARMACIA SARSUR S.C.S.;23;BALANCE;1168251.19
-0000163;DAUWALDER VERONICA ANALIA;3;MENSUALIZADO MONOTRI;1
-0000163;DAUWALDER VERONICA ANALIA;10;RECATEG.MONOTRIBUTO;1
-0000163;DAUWALDER VERONICA ANALIA;10;RECATEG.MONOTRIBUTO;1
-0000164;ROBILOTTE BETTINA;3;MENSUALIZADO MONOTRI;1
-0000164;ROBILOTTE BETTINA;10;RECATEG.MONOTRIBUTO;1
-0000164;ROBILOTTE BETTINA;10;RECATEG.MONOTRIBUTO;1
-0000166;VOLPE LAURA MARIA CRISTINA;3;MENSUALIZADO MONOTRI;1
-0000166;VOLPE LAURA MARIA CRISTINA;3;MENSUALIZADO MONOTRI;1
-0000166;VOLPE LAURA MARIA CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000166;VOLPE LAURA MARIA CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000166;VOLPE LAURA MARIA CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000166;VOLPE LAURA MARIA CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000169;FERNANDEZ PATRICIA LEONOR;3;MENSUALIZADO MONOTRI;1
-0000169;FERNANDEZ PATRICIA LEONOR;10;RECATEG.MONOTRIBUTO;1
-0000169;FERNANDEZ PATRICIA LEONOR;10;RECATEG.MONOTRIBUTO;1
-0000171;TRABUCCO CARLOS;3;MENSUALIZADO MONOTRI;1
-0000171;TRABUCCO CARLOS;10;RECATEG.MONOTRIBUTO;1
-0000171;TRABUCCO CARLOS;10;RECATEG.MONOTRIBUTO;1
-0000173;FRANCISCO SEXTO S.R.L.;4;MENSUALIZADO GLOBAL;122500
-0000174;FERNANDEZ SILVIA ANAHI;1;MENSUAL IVA/IIBB;1
-0000174;FERNANDEZ SILVIA ANAHI;22;DDJJ GANANC./B.PERS.;825000
-0000174;FERNANDEZ SILVIA ANAHI;16;IP2 GRUESA SIEMBRA;1
-0000174;FERNANDEZ SILVIA ANAHI;17;IP1 FINA-EXISTENCIA;1
-0000174;FERNANDEZ SILVIA ANAHI;29;CONT.FISCAL AGROP.;1
-0000182;MELONI ADRIAN ALFREDO;1;MENSUAL IVA/IIBB;1
-0000182;MELONI ADRIAN ALFREDO;22;DDJJ GANANC./B.PERS.;630000
-0000184;PICHI PUL S.A.;4;MENSUALIZADO GLOBAL;580000
-0000184;PICHI PUL S.A.;23;BALANCE;1
-0000187;PAGGI GUILLERMO ARIEL;1;MENSUAL IVA/IIBB;1
-0000187;PAGGI GUILLERMO ARIEL;22;DDJJ GANANC./B.PERS.;665000
-0-0000187;PAGGI GUILLERMO ARIEL;16;IP2 GRUESA SIEMBRA;1
-0000187;PAGGI GUILLERMO ARIEL;17;IP1 FINA-EXISTENCIA;1
-0000188;ROBILOTTE EMANUEL;1;MENSUAL IVA/IIBB;1
-0000188;ROBILOTTE EMANUEL;22;DDJJ GANANC./B.PERS.;665000
-0000188;ROBILOTTE EMANUEL;16;IP2 GRUESA SIEMBRA;1
-0000188;ROBILOTTE EMANUEL;17;IP1 FINA-EXISTENCIA;1
-0000188;ROBILOTTE EMANUEL;29;CONT.FISCAL AGROP.;1
-0000190;PATTHAUER GUSTAVO ALFREDO;1;MENSUAL IVA/IIBB;1
-0000190;PATTHAUER GUSTAVO ALFREDO;22;DDJJ GANANC./B.PERS.;630000
-0000190;PATTHAUER GUSTAVO ALFREDO;6;MONOTRIBUTO REDUCIDO;1
-0000190;PATTHAUER GUSTAVO ALFREDO;11;RECAT. MONOTR. REDUC;1
-0000190;PATTHAUER GUSTAVO ALFREDO;11;RECAT. MONOTR. REDUC;1
-0000192;MONZA NEUMATICOS S.A.;4;MENSUALIZADO GLOBAL;170000
-0000193;GOMERIAS MONZA S.A.;4;MENSUALIZADO GLOBAL;200000
-0000204;KREDER CRISTIAN LUIS;3;MENSUALIZADO MONOTRI;1
-0000204;KREDER CRISTIAN LUIS;21;DDJJ INGR BRUTOS1;1
-0000204;KREDER CRISTIAN LUIS;10;RECATEG.MONOTRIBUTO;1
-0000204;KREDER CRISTIAN LUIS;10;RECATEG.MONOTRIBUTO;1
-0000207;OTERO MATIAS JOSE;3;MENSUALIZADO MONOTRI;1
-0000207;OTERO MATIAS JOSE;10;RECATEG.MONOTRIBUTO;1
-0000207;OTERO MATIAS JOSE;10;RECATEG.MONOTRIBUTO;1
-0000209;MILLA LAUTARO HECTOR;22;DDJJ GANANC./B.PERS.;630000
-0000210;FITTIPALDI HILDA MARIA;22;DDJJ GANANC./B.PERS.;88700
-0000211;FERNANDEZ SERGIO ARIEL;1;MENSUAL IVA/IIBB;1
-0000211;FERNANDEZ SERGIO ARIEL;22;DDJJ GANANC./B.PERS.;630000
-0000211;FERNANDEZ SERGIO ARIEL;2;MENSUALIZADO LABORAL;1
-0000211;FERNANDEZ SERGIO ARIEL;16;IP2 GRUESA SIEMBRA;1
-0000211;FERNANDEZ SERGIO ARIEL;17;IP1 FINA-EXISTENCIA;1
-0000211;FERNANDEZ SERGIO ARIEL;29;CONT.FISCAL AGROP.;1
-0000212;LAUMANN RICARDO RAUL;1;MENSUAL IVA/IIBB;1
-0000212;LAUMANN RICARDO RAUL;22;DDJJ GANANC./B.PERS.;980000
-0000212;LAUMANN RICARDO RAUL;16;IP2 GRUESA SIEMBRA;1
-0000212;LAUMANN RICARDO RAUL;17;IP1 FINA-EXISTENCIA;1
-0000212;LAUMANN RICARDO RAUL;29;CONT.FISCAL AGROP.;1
-0000213;LAUMANN EDUARDO MARCELINO;1;MENSUAL IVA/IIBB;1
-0000213;LAUMANN EDUARDO MARCELINO;22;DDJJ GANANC./B.PERS.;980000
-0000213;LAUMANN EDUARDO MARCELINO;16;IP2 GRUESA SIEMBRA;1
-0000213;LAUMANN EDUARDO MARCELINO;17;IP1 FINA-EXISTENCIA;1
-0000213;LAUMANN EDUARDO MARCELINO;29;CONT.FISCAL AGROP.;1
-0000217;YEREGUI MARIA CRISTINA;1;MENSUAL IVA/IIBB;1
-0000217;YEREGUI MARIA CRISTINA;22;DDJJ GANANC./B.PERS.;630000
-0000219;TRABUCCO CARLOS ATILIO;3;MENSUALIZADO MONOTRI;1
-0000219;TRABUCCO CARLOS ATILIO;10;RECATEG.MONOTRIBUTO;1
-0000219;TRABUCCO CARLOS ATILIO;10;RECATEG.MONOTRIBUTO;1
-0000219;TRABUCCO CARLOS ATILIO;29;CONT.FISCAL AGROP.;1
-0000220;SARSUR YANIRA;3;MENSUALIZADO MONOTRI;1
-0000220;SARSUR YANIRA;10;RECATEG.MONOTRIBUTO;1
-0000220;SARSUR YANIRA;10;RECATEG.MONOTRIBUTO;1
-0000221;MONTENEGRO CAROLINA;1;MENSUAL IVA/IIBB;1
-0000221;MONTENEGRO CAROLINA;22;DDJJ GANANC./B.PERS.;565000
-0000221;MONTENEGRO CAROLINA;5;LABORAL DOMESTICO;1
-0000221;MONTENEGRO CAROLINA;16;IP2 GRUESA SIEMBRA;1
-0000221;MONTENEGRO CAROLINA;17;IP1 FINA-EXISTENCIA;1
-0000221;MONTENEGRO CAROLINA;29;CONT.FISCAL AGROP.;1
-0000225;FERRANDO ROSANA NORA;1;MENSUAL IVA/IIBB;1
-0000225;FERRANDO ROSANA NORA;22;DDJJ GANANC./B.PERS.;825000
-0000225;FERRANDO ROSANA NORA;2;MENSUALIZADO LABORAL;1
-0000225;FERRANDO ROSANA NORA;5;LABORAL DOMESTICO;1
-0000225;FERRANDO ROSANA NORA;16;IP2 GRUESA SIEMBRA;1
-0000225;FERRANDO ROSANA NORA;17;IP1 FINA-EXISTENCIA;1
-0000225;FERRANDO ROSANA NORA;29;CONT.FISCAL AGROP.;1
-0000226;GARCIA ALONSO JUAN PABLO;3;MENSUALIZADO MONOTRI;1
-0000226;GARCIA ALONSO JUAN PABLO;10;RECATEG.MONOTRIBUTO;1
-0000226;GARCIA ALONSO JUAN PABLO;10;RECATEG.MONOTRIBUTO;1
-0000227;SALSOLA KALI S.A.;4;MENSUALIZADO GLOBAL;445000
-0000227;SALSOLA KALI S.A.;23;BALANCE;3915000
-0000228;PASO DEL MOJON S.A.;4;MENSUALIZADO GLOBAL;425000
-0000228;PASO DEL MOJON S.A.;28;CONF. BALANCE Y GAN;1546934.93
-0000228;PASO DEL MOJON S.A.;28;CONF. BALANCE Y GAN;1248474.92
-0000231;RAGGI CARLOS ARIEL;1;MENSUAL IVA/IIBB;1
-0000231;RAGGI CARLOS ARIEL;22;DDJJ GANANC./B.PERS.;630000
-0000231;RAGGI CARLOS ARIEL;10;RECATEG.MONOTRIBUTO;1
-0000231;RAGGI CARLOS ARIEL;10;RECATEG.MONOTRIBUTO;1
-0000231;RAGGI CARLOS ARIEL;3;MENSUALIZADO MONOTRI;1
-0000232;SUC. FERNANDEZ RUBEN ANGEL;4;MENSUALIZADO GLOBAL;25000
-0000232;SUC. FERNANDEZ RUBEN ANGEL;22;DDJJ GANANC./B.PERS.;545000
-0000232;SUC. FERNANDEZ RUBEN ANGEL;29;CONT.FISCAL AGROP.;1
-0000235;HEIM LIDIA IRENE;3;MENSUALIZADO MONOTRI;1
-0000235;HEIM LIDIA IRENE;10;RECATEG.MONOTRIBUTO;1
-0000235;HEIM LIDIA IRENE;10;RECATEG.MONOTRIBUTO;1
-0000235;HEIM LIDIA IRENE;29;CONT.FISCAL AGROP.;1
-0000237;ROSSO CRISTINA;3;MENSUALIZADO MONOTRI;1
-0000237;ROSSO CRISTINA;22;DDJJ GANANC./B.PERS.;230000
-0000237;ROSSO CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0-0000237;ROSSO CRISTINA;10;RECATEG.MONOTRIBUTO;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;1;MENSUAL IVA/IIBB;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;22;DDJJ GANANC./B.PERS.;785000
-0000238;ACTIS GORETTA GUSTAVO DANIEL;16;IP2 GRUESA SIEMBRA;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;17;IP1 FINA-EXISTENCIA;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;29;CONT.FISCAL AGROP.;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;3;MENSUALIZADO MONOTRI;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;10;RECATEG.MONOTRIBUTO;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;10;RECATEG.MONOTRIBUTO;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;3;MENSUALIZADO MONOTRI;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;10;RECATEG.MONOTRIBUTO;1
-0000238;ACTIS GORETTA GUSTAVO DANIEL;10;RECATEG.MONOTRIBUTO;1
-0000239;MILCAM AGROPECUARIA S.A.;4;MENSUALIZADO GLOBAL;700000
-0000239;MILCAM AGROPECUARIA S.A.;23;BALANCE;10440000
-0000243;DON PACHO AGROSER.AGROP. S.R.L;4;MENSUALIZADO GLOBAL;250000
-0000243;DON PACHO AGROSER.AGROP. S.R.L;23;BALANCE;1150000
-0000245;MELONI MATIAS;3;MENSUALIZADO MONOTRI;1
-0000245;MELONI MATIAS;10;RECATEG.MONOTRIBUTO;1
-0000245;MELONI MATIAS;10;RECATEG.MONOTRIBUTO;1
-0000246;SANCHEZ ADRIAN;3;MENSUALIZADO MONOTRI;1
-0000246;SANCHEZ ADRIAN;10;RECATEG.MONOTRIBUTO;1
-0000246;SANCHEZ ADRIAN;10;RECATEG.MONOTRIBUTO;1
-0000247;CAZENAVE RICARDO DANIEL;3;MENSUALIZADO MONOTRI;1
-0000247;CAZENAVE RICARDO DANIEL;10;RECATEG.MONOTRIBUTO;1
-0000247;CAZENAVE RICARDO DANIEL;10;RECATEG.MONOTRIBUTO;1
-0ba00249;VIDAL MAURICIO ARIEL;3;MENSUALIZADO MONOTRI;1
-0000249;VIDAL MAURICIO ARIEL;10;RECATEG.MONOTRIBUTO;1
-0000249;VIDAL MAURICIO ARIEL;10;RECATEG.MONOTRIBUTO;1
-0000251;BARAGRO SOCIEDAD SIMPLE;4;MENSUALIZADO GLOBAL;250000
-0000253;LESCANO CARLA NAZARENA;3;MENSUALIZADO MONOTRI;1
-0000253;LESCANO CARLA NAZARENA;10;RECATEG.MONOTRIBUTO;1
-0000253;LESCANO CARLA NAZARENA;10;RECATEG.MONOTRIBUTO;1
-0000254;SAGASTI ELSIE NORA;3;MENSUALIZADO MONOTRI;1
-0000254;SAGASTI ELSIE NORA;10;RECATEG.MONOTRIBUTO;1
-0000254;SAGASTI ELSIE NORA;10;RECATEG.MONOTRIBUTO;1
-0000254;SAGASTI ELSIE NORA;29;CONT.FISCAL AGROP.;1
-0000255;PAGGI DEMES ALBERTO RAUL;3;MENSUALIZADO MONOTRI;1
-0000255;PAGGI DEMES ALBERTO RAUL;10;RECATEG.MONOTRIBUTO;1
-0000255;PAGGI DEMES ALBERTO RAUL;10;RECATEG.MONOTRIBUTO;1
-0000256;SCHWAB MATIAS ENZO;1;MENSUAL IVA/IIBB;1
-0000256;SCHWAB MATIAS ENZO;22;DDJJ GANANC./B.PERS.;785000
-0000256;SCHWAB MATIAS ENZO;3;MENSUALIZADO MONOTRI;1
-0000256;SCHWAB MATIAS ENZO;10;RECATEG.MONOTRIBUTO;1
-0000256;SCHWAB MATIAS ENZO;10;RECATEG.MONOTRIBUTO;1
-0000257;PENNA GUSTAVO RAUL;3;MENSUALIZADO MONOTRI;1
-0000257;PENNA GUSTAVO RAUL;16;IP2 GRUESA SIEMBRA;1
-0000257;PENNA GUSTAVO RAUL;17;IP1 FINA-EXISTENCIA;1
-0000257;PENNA GUSTAVO RAUL;10;RECATEG.MONOTRIBUTO;1
-0000257;PENNA GUSTAVO RAUL;10;RECATEG.MONOTRIBUTO;1
-0000257;PENNA GUSTAVO RAUL;29;CONT.FISCAL AGROP.;1
-0000260;ALVAREZ VICTOR MAXIMILIANO;3;MENSUALIZADO MONOTRI;1
-0000260;ALVAREZ VICTOR MAXIMILIANO;10;RECATEG.MONOTRIBUTO;1
-0000260;ALVAREZ VICTOR MAXIMILIANO;10;RECATEG.MONOTRIBUTO;1
-0000260;ALVAREZ VICTOR MAXIMILIANO;3;MENSUALIZADO MONOTRI;1
-0000260;ALVAREZ VICTOR MAXIMILIANO;10;RECATEG.MONOTRIBUTO;1
-0000260;ALVAREZ VICTOR MAXIMILIANO;10;RECATEG.MONOTRIBUTO;1
-0000261;LETE CLAUDIA LORENA;3;MENSUALIZADO MONOTRI;1
-0000261;LETE CLAUDIA LORENA;10;RECATEG.MONOTRIBUTO;1
-0000261;LETE CLAUDIA LORENA;10;RECATEG.MONOTRIBUTO;1
-0000265;GONZALEZ LAURA KARINA;3;MENSUALIZADO MONOTRI;1
-0000265;GONZALEZ LAURA KARINA;10;RECATEG.MONOTRIBUTO;1
-0000265;GONZALEZ LAURA KARINA;10;RECATEG.MONOTRIBUTO;1
-0-0000268;ALONSO VILMA MARISA;3;MENSUALIZADO MONOTRI;1
-0000268;ALONSO VILMA MARISA;10;RECATEG.MONOTRIBUTO;1
-0000268;ALONSO VILMA MARISA;10;RECATEG.MONOTRIBUTO;1
-0000269;NUESCH GUILLERMO RODOLFO;3;MENSUALIZADO MONOTRI;1
-0000269;NUESCH GUILLERMO RODOLFO;10;RECATEG.MONOTRIBUTO;1
-0000269;NUESCH GUILLERMO RODOLFO;10;RECATEG.MONOTRIBUTO;1
-0000270;ALVAREZ MAURO CESAR;1;MENSUAL IVA/IIBB;1
-0000270;ALVAREZ MAURO CESAR;22;DDJJ GANANC./B.PERS.;630000
-0000270;ALVAREZ MAURO CESAR;16;IP2 GRUESA SIEMBRA;1
-0000270;ALVAREZ MAURO CESAR;17;IP1 FINA-EXISTENCIA;1
-0-0000270;ALVAREZ MAURO CESAR;29;CONT.FISCAL AGROP.;1
-0000273;MAUGERI CLARA;3;MENSUALIZADO MONOTRI;1
-0000273;MAUGERI CLARA;10;RECATEG.MONOTRIBUTO;1
-0000273;MAUGERI CLARA;10;RECATEG.MONOTRIBUTO;1
-0000275;VAZQUEZ NORA;22;DDJJ GANANC./B.PERS.;630000
-0000277;MONTENEGRO JULIANA;1;MENSUAL IVA/IIBB;1
-0000277;MONTENEGRO JULIANA;22;DDJJ GANANC./B.PERS.;565000
-0000277;MONTENEGRO JULIANA;16;IP2 GRUESA SIEMBRA;1
-0000277;MONTENEGRO JULIANA;17;IP1 FINA-EXISTENCIA;1
-0000277;MONTENEGRO JULIANA;29;CONT.FISCAL AGROP.;1
-0000279;VERCELLINO MARCOS DANIEL;1;MENSUAL IVA/IIBB;1
-0000279;VERCELLINO MARCOS DANIEL;22;DDJJ GANANC./B.PERS.;565000
-0000279;VERCELLINO MARCOS DANIEL;16;IP2 GRUESA SIEMBRA;1
-0000279;VERCELLINO MARCOS DANIEL;17;IP1 FINA-EXISTENCIA;1
-0000281;FERNANDEZ ROBERTO OSCAR;1;MENSUAL IVA/IIBB;1
-0000281;FERNANDEZ ROBERTO OSCAR;22;DDJJ GANANC./B.PERS.;565000
-0000281;FERNANDEZ ROBERTO OSCAR;5;LABORAL DOMESTICO;1
-0000281;FERNANDEZ ROBERTO OSCAR;3;MENSUALIZADO MONOTRI;1
-0000281;FERNANDEZ ROBERTO OSCAR;10;RECATEG.MONOTRIBUTO;1
-0-0000281;FERNANDEZ ROBERTO OSCAR;10;RECATEG.MONOTRIBUTO;1
-0000282;BILBAO RAUL ALFREDO;2;MENSUALIZADO LABORAL;1
-0000282;BILBAO RAUL ALFREDO;5;LABORAL DOMESTICO;1
-`
+import { getAsignacionesByNovedadId, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
+import { useToast } from "@/hooks/use-toast"
+import { AsignacionDialog } from "./asignacion-dialog"
+import { Combobox } from "@/components/ui/combobox"
 
 export function AsignacionIndividualView() {
+  // Global data
+  const [clientes, setClientes] = React.useState<ClienteWithId[]>([])
+  const [novedades, setNovedades] = React.useState<NovedadWithId[]>([])
+  
+  // State for the selected novelty and its assignments
+  const [selectedNovedad, setSelectedNovedad] = React.useState<NovedadWithId | null>(null)
+  const [asignacionesNovedad, setAsignacionesNovedad] = React.useState<AsignacionViewModel[]>([]);
+  
+  // State for the "add new" form
+  const [selectedClienteId, setSelectedClienteId] = React.useState<string | null>(null)
+  const [newCantidad, setNewCantidad] = React.useState<number | string>(1.00)
+
+  // UI State
   const [isLoading, setIsLoading] = React.useState(true)
-  const [isProcessing, setIsProcessing] = React.useState(false)
+  const [isLoadingAsignaciones, setIsLoadingAsignaciones] = React.useState(false);
+  const [isDialogEditOpen, setIsDialogEditOpen] = React.useState(false);
+  const [asignacionToEdit, setAsignacionToEdit] = React.useState<AsignacionViewModel | null>(null);
   const { toast } = useToast()
 
+  const novedadOptions = React.useMemo(() => {
+    return novedades.map(n => ({ value: n.id, label: `${n.codigo} - ${n.nombre}` }))
+  }, [novedades]);
+  
+  const clienteOptions = React.useMemo(() => {
+    // Filter out clients that are already assigned to the selected novelty
+    const assignedClientIds = new Set(asignacionesNovedad.map(a => a.clienteId));
+    return clientes
+      .filter(c => !assignedClientIds.has(c.id))
+      .sort((a, b) => a.codigo - b.codigo)
+      .map(c => ({ value: c.id, label: `${c.codigo} - ${c.nombre}` }));
+  }, [clientes, asignacionesNovedad]);
+
+
+  // Initial data fetch for clients and novedades
   React.useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const asignacionesExistentes = await getAsignaciones();
-        if (asignacionesExistentes.length === 0) {
-          toast({
-            title: "Iniciando carga de asignaciones",
-            description: "La base de datos de asignaciones está vacía, se procederá a la carga inicial.",
-          });
-          setIsProcessing(true);
+    const fetchInitialData = async () => {
+        setIsLoading(true);
+        try {
+            const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
+            setClientes(clientesData);
+            
+            const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.codigo, item])).values());
+            setNovedades(uniqueNovedades.sort((a, b) => a.codigo - b.codigo));
 
-          const [clientes, novedades] = await Promise.all([getClientes(), getNovedades()]);
-          const clientesMap = new Map(clientes.map(c => [c.codigo, c.id]));
-          const novedadesMap = new Map(novedades.map(n => [n.codigo, n.id]));
-
-          const lines = initialAssignmentsData.trim().split('\n');
-          const asignacionesParaCargar: Asignacion[] = [];
-
-          lines.forEach(line => {
-            const parts = line.split(';').map(p => p.trim());
-            const clienteCodigo = parseInt(parts[0], 10);
-            const novedadCodigo = parseInt(parts[2], 10);
-            const cantidad = parseFloat(parts[4].replace(',', '.')) || 1;
-
-            const clienteId = clientesMap.get(clienteCodigo);
-            const novedadId = novedadesMap.get(novedadCodigo);
-
-            if (clienteId && novedadId) {
-              asignacionesParaCargar.push({
-                clienteId,
-                novedadId,
-                cantidad,
-              });
-            }
-          });
-          
-          const uniqueAsignaciones = Array.from(new Map(asignacionesParaCargar.map(a => [`${a.clienteId}-${a.novedadId}`, a])).values());
-
-          await addAsignacionesBatch(uniqueAsignaciones);
-
-          toast({
-            title: "Carga Inicial Completada",
-            description: `Se han cargado ${uniqueAsignaciones.length} asignaciones.`,
-          });
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            toast({ title: "Error", description: "No se pudieron cargar los datos iniciales.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Error en la carga inicial de asignaciones:", error);
-        toast({
-          title: "Error en Carga Inicial",
-          description: "No se pudieron cargar las asignaciones iniciales.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-        setIsProcessing(false);
-      }
     };
-    fetchData();
+    fetchInitialData();
   }, [toast]);
+  
+  const fetchAsignacionesForNovedad = React.useCallback(async (novedadId: string) => {
+      if (!novedadId) return;
+      setIsLoadingAsignaciones(true);
+      try {
+          const asignacionesData = await getAsignacionesByNovedadId(novedadId);
+          const clientesMap = new Map(clientes.map(c => [c.id, c]));
+          const novedad = novedades.find(n => n.id === novedadId);
+          if (!novedad) return;
 
+          const viewModel: AsignacionViewModel[] = asignacionesData.map(a => {
+              const cliente = clientesMap.get(a.clienteId);
+              if (!cliente) return null;
+              return {
+                  id: a.id,
+                  clienteId: cliente.id,
+                  clienteCodigo: cliente.codigo,
+                  clienteNombre: cliente.nombre,
+                  novedadId: novedad.id,
+                  novedadCodigo: novedad.codigo,
+                  novedadNombre: novedad.nombre,
+                  cantidad: a.cantidad,
+                  importe: novedad.importe * a.cantidad,
+              };
+          }).filter((item): item is AsignacionViewModel => item !== null);
+
+          setAsignacionesNovedad(viewModel.sort((a,b) => a.clienteCodigo - b.clienteCodigo));
+
+      } catch (error) {
+          console.error("Error fetching assignments for novelty:", error);
+          toast({ title: "Error", description: "No se pudieron cargar las asignaciones de la novedad.", variant: "destructive" });
+      } finally {
+          setIsLoadingAsignaciones(false);
+      }
+  }, [clientes, novedades, toast]);
+
+  const handleSelectNovedad = (novedadId: string) => {
+    const novedad = novedades.find(n => n.id === novedadId);
+    setSelectedNovedad(novedad || null);
+    setAsignacionesNovedad([]); // Clear previous assignments
+    if (novedadId) {
+        fetchAsignacionesForNovedad(novedadId);
+    }
+  }
+
+  const handleAddServicio = async () => {
+    if (!selectedNovedad || !selectedClienteId) {
+      toast({ title: "Error", description: "Debe seleccionar una novedad y un cliente.", variant: "destructive" });
+      return;
+    }
+    const cantidadNum = typeof newCantidad === 'string' ? parseFloat(newCantidad.replace(',', '.')) : newCantidad;
+    if (isNaN(cantidadNum) || cantidadNum <= 0) {
+      toast({ title: "Error", description: "La cantidad debe ser un número positivo.", variant: "destructive" });
+      return;
+    }
+
+    try {
+        await addAsignacion({
+            clienteId: selectedClienteId,
+            novedadId: selectedNovedad.id,
+            cantidad: cantidadNum,
+        });
+        toast({ title: "Asignación Creada", description: "La novedad se asignó correctamente." });
+        fetchAsignacionesForNovedad(selectedNovedad.id); // Refresh list
+        setSelectedClienteId(null);
+        setNewCantidad(1.00);
+    } catch (error: any) {
+        console.error("Error adding service:", error);
+        toast({ title: "Error", description: error.message || "No se pudo guardar la asignación.", variant: "destructive" });
+    }
+  };
+
+  const handleRemoveServicio = async (asignacionId: string) => {
+    try {
+        await deleteAsignacion(asignacionId);
+        toast({ title: "Asignación Eliminada", description: "La asignación se ha eliminado correctamente." });
+        if(selectedNovedad) fetchAsignacionesForNovedad(selectedNovedad.id);
+    } catch (error) {
+        console.error("Error removing service:", error);
+        toast({ title: "Error", description: "No se pudo eliminar la asignación.", variant: "destructive" });
+    }
+  };
+
+  const handleEditServicio = (asignacion: AsignacionViewModel) => {
+    setAsignacionToEdit(asignacion);
+    setIsDialogEditOpen(true);
+  };
+
+  const handleSaveEdit = async (nuevaCantidad: number) => {
+    if (!asignacionToEdit) return;
+    try {
+      await updateAsignacion(asignacionToEdit.id, { cantidad: nuevaCantidad });
+      toast({ title: "Asignación Actualizada", description: "La cantidad se actualizó correctamente." });
+      if(selectedNovedad) fetchAsignacionesForNovedad(selectedNovedad.id);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast({ title: "Error", description: "No se pudo actualizar la asignación.", variant: "destructive" });
+    } finally {
+      setIsDialogEditOpen(false);
+      setAsignacionToEdit(null);
+    }
+  };
+  
+  const formatCurrency = (value: number) => {
+      return new Intl.NumberFormat('es-AR', {
+          style: 'decimal',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+      }).format(value);
+  };
 
   return (
-    <div className="p-6">
+    <div className="space-y-6 pt-6">
       <Card>
         <CardHeader>
-          <CardTitle>Asignación Individual Masiva</CardTitle>
-          <CardDescription>
-            Este panel se utiliza para la carga inicial de datos de asignaciones. Si ya existen datos, no se realizará ninguna acción.
-          </CardDescription>
+            <CardTitle>Seleccionar Novedad</CardTitle>
+            <CardDescription>Elija una novedad para ver y gestionar sus clientes asignados.</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading || isProcessing ? (
-            <div className="flex flex-col items-center justify-center h-40 gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-muted-foreground">
-                {isLoading ? "Verificando datos..." : "Procesando carga inicial..."}
-              </p>
+            <div className="max-w-md">
+                <Label htmlFor="novedad-select">Novedad</Label>
+                 <Combobox 
+                    options={novedadOptions}
+                    value={selectedNovedad?.id}
+                    onValueChange={handleSelectNovedad}
+                    placeholder="Seleccione una novedad..."
+                    searchPlaceholder="Buscar novedad..."
+                    notFoundMessage="No se encontraron novedades."
+                    disabled={isLoading}
+                />
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-40 gap-4">
-                 <p className="text-muted-foreground">La carga inicial de asignaciones ya ha sido realizada.</p>
-            </div>
-          )}
         </CardContent>
       </Card>
+      
+      {selectedNovedad && (
+        <>
+            <Card>
+                <CardHeader>
+                <CardTitle>Añadir Cliente a {selectedNovedad.nombre}</CardTitle>
+                <CardDescription>Añada un nuevo cliente a la novedad seleccionada.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div className="space-y-2">
+                            <Label htmlFor="cliente-select">Cliente</Label>
+                            <Combobox 
+                                options={clienteOptions}
+                                value={selectedClienteId}
+                                onValueChange={setSelectedClienteId}
+                                placeholder="Seleccione un cliente..."
+                                searchPlaceholder="Buscar cliente..."
+                                notFoundMessage="No hay clientes disponibles."
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="cantidad-input">Cantidad</Label>
+                            <Input 
+                                id="cantidad-input"
+                                type="text" 
+                                inputMode="decimal"
+                                value={String(newCantidad).replace('.',',')}
+                                onChange={(e) => setNewCantidad(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <Button onClick={handleAddServicio} className="w-full">
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Agregar Asignación
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                <CardTitle>Clientes Asignados a {selectedNovedad.nombre}</CardTitle>
+                <CardDescription>Lista de todos los clientes asignados.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <div className="border rounded-lg">
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead className="text-right">Cantidad</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoadingAsignaciones ? (
+                             <TableRow>
+                                <TableCell colSpan={3} className="text-center h-24">
+                                    <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                                </TableCell>
+                            </TableRow>
+                        ) : asignacionesNovedad.length > 0 ? (
+                        asignacionesNovedad.map((asignacion) => (
+                            <TableRow key={asignacion.id}>
+                                <TableCell className="font-medium">{`${asignacion.clienteCodigo} - ${asignacion.clienteNombre}`}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(asignacion.cantidad)}</TableCell>
+                                <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={() => handleEditServicio(asignacion)}>
+                                    <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => handleRemoveServicio(asignacion.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                        ) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center h-24">
+                            Esta novedad no tiene clientes asignados.
+                            </TableCell>
+                        </TableRow>
+                        )}
+                    </TableBody>
+                    </Table>
+                </div>
+                </CardContent>
+            </Card>
+        </>
+      )}
+
+      <AsignacionDialog
+        isOpen={isDialogEditOpen}
+        onOpenChange={setIsDialogEditOpen}
+        onSave={handleSaveEdit}
+        asignacion={asignacionToEdit}
+      />
     </div>
   )
 }

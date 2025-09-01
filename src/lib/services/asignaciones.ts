@@ -19,6 +19,16 @@ export async function getAsignacionesByClienteId(clienteId: string): Promise<Asi
     return snapshot.docs.map(doc => ({ ...doc.data() as Asignacion, id: doc.id }));
 }
 
+export async function getAsignacionesByNovedadId(novedadId: string): Promise<AsignacionWithId[]> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const asignacionesCollection = collection(db, "asignaciones");
+    const q = query(asignacionesCollection, where("novedadId", "==", novedadId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data() as Asignacion, id: doc.id }));
+}
+
+
 export async function addAsignacion(asignacion: Asignacion) {
     const db = getClientDb();
     if (!db) throw new Error("Firestore is not initialized");
