@@ -8,7 +8,8 @@ import { getEmpresas, initializePrimaryFirebase } from '@/lib/services/empresas'
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Combobox } from "@/components/ui/combobox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { BotMessageSquare, Loader2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { EmpresasAdminDialog } from '@/components/dashboard/empresas-admin-dialog';
@@ -16,9 +17,10 @@ import { AdminPasswordDialog } from '@/components/dashboard/admin-password-dialo
 
 
 export default function CompanySelectorPage() {
-  const [selectedCuit, setSelectedCuit] = React.useState<string | null>(null);
+  const [cuit, setCuit] = React.useState('');
   const [empresas, setEmpresas] = React.useState<Empresa[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isProcessing, setIsProcessing] = React.useState(false);
   const [isAdminDialogOpen, setIsAdminDialogOpen] = React.useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = React.useState(false);
   
@@ -32,7 +34,7 @@ export default function CompanySelectorPage() {
       try {
         initializePrimaryFirebase();
         const empresasData = await getEmpresas();
-        setEmpresas(empresasData.sort((a,b) => a.nombre.localeCompare(b.nombre)));
+        setEmpresas(empresasData);
       } catch (error) {
         console.error("Error loading companies:", error);
         toast({
@@ -47,25 +49,19 @@ export default function CompanySelectorPage() {
     loadData();
   }, [toast]);
   
-  const empresaOptions = React.useMemo(() => {
-    return empresas.map(e => ({ value: e.cuit, label: `${e.nombre} - CUIT: ${e.cuit}` }));
-  }, [empresas]);
-
-  const handleSelectEmpresa = (cuit: string) => {
-    setSelectedCuit(cuit);
-  };
-
   const handleContinue = () => {
-    if (!selectedCuit) {
+    setIsProcessing(true);
+    if (!cuit) {
       toast({
         title: "Error",
-        description: "Por favor, seleccione una empresa para continuar.",
+        description: "Por favor, ingrese un CUIT para continuar.",
         variant: "destructive",
       });
+      setIsProcessing(false);
       return;
     }
 
-    const empresa = empresas.find(e => e.cuit === selectedCuit);
+    const empresa = empresas.find(e => e.cuit === cuit);
     if (empresa) {
       localStorage.setItem('selectedFirebaseConfig', JSON.stringify(empresa.firebaseConfig));
       localStorage.setItem('selectedEmpresaNombre', empresa.nombre);
@@ -73,12 +69,19 @@ export default function CompanySelectorPage() {
       router.push('/login');
     } else {
        toast({
-        title: "Error",
-        description: "La configuración de la empresa seleccionada no se encontró.",
+        title: "CUIT no encontrado",
+        description: "No se encontró ninguna empresa con el CUIT ingresado. Verifique el número e intente de nuevo.",
         variant: "destructive",
       });
+       setIsProcessing(false);
     }
   };
+   
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+        handleContinue();
+    }
+  }
   
   const onAdminDialogClose = async () => {
       setIsAdminDialogOpen(false);
@@ -110,7 +113,7 @@ export default function CompanySelectorPage() {
           <CardTitle className="text-2xl">
             Bienvenido al Sistema de Gestión
           </CardTitle>
-          <CardDescription>Seleccione la oficina con la que desea trabajar</CardDescription>
+          <CardDescription>Ingrese el CUIT de la oficina con la que desea trabajar</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
            {isLoading ? (
@@ -118,16 +121,21 @@ export default function CompanySelectorPage() {
                     <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
             ) : (
-                <Combobox 
-                    options={empresaOptions}
-                    value={selectedCuit}
-                    onValueChange={handleSelectEmpresa}
-                    placeholder="Seleccione una empresa..."
-                    searchPlaceholder="Buscar por nombre o CUIT..."
-                    notFoundMessage="No se encontraron empresas."
-                />
+                <div className="space-y-2">
+                    <Label htmlFor="cuit-input">CUIT</Label>
+                    <Input 
+                        id="cuit-input"
+                        placeholder="Ingrese el número de CUIT sin guiones"
+                        value={cuit}
+                        onChange={(e) => setCuit(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={isProcessing}
+                        autoFocus
+                    />
+                </div>
             )}
-          <Button onClick={handleContinue} className="w-full" disabled={!selectedCuit || isLoading}>
+          <Button onClick={handleContinue} className="w-full" disabled={!cuit || isLoading || isProcessing}>
+             {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Continuar
           </Button>
         </CardContent>
