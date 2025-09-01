@@ -111,7 +111,7 @@ export default function CompanySelectorPage() {
             <BotMessageSquare className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">
-            Bienvenido al Sistema de Gestión
+            Bienvenido al Sistema de Gestión de Oficinas Contables y Jurídicas
           </CardTitle>
           <CardDescription>Ingrese el CUIT de la oficina con la que desea trabajar</CardDescription>
         </CardHeader>
