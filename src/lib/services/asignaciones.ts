@@ -132,3 +132,26 @@ export async function deleteAsignacionesEventuales(asignaciones: AsignacionWithI
     });
     await batch.commit();
 }
+
+/**
+ * Deletes all assignments marked as 'eventual'.
+ * @returns The number of deleted assignments.
+ */
+export async function deleteAllEventualAsignaciones(): Promise<number> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const asignacionesCollection = collection(db, "asignaciones");
+    const q = query(asignacionesCollection, where("eventual", "==", true));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return 0; // Nothing to delete
+    }
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(d => {
+        batch.delete(d.ref);
+    });
+    await batch.commit();
+    return snapshot.size;
+}
