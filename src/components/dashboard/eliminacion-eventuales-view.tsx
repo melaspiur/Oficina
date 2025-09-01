@@ -6,6 +6,8 @@ import { Loader2, Trash2, AlertTriangle } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { deleteAllEventualAsignaciones } from "@/lib/services/asignaciones"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -13,10 +15,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 export function EliminacionEventualesView() {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [confirmText, setConfirmText] = React.useState("");
 
   const { toast } = useToast()
+  
+  const isConfirmButtonDisabled = confirmText !== "ELIMINAR";
 
   const handleEliminar = async () => {
+    if (isConfirmButtonDisabled) return;
+
     setIsProcessing(true);
     setIsConfirmOpen(false);
     
@@ -38,6 +45,7 @@ export function EliminacionEventualesView() {
         toast({ title: "Error", description: "No se pudieron eliminar las asignaciones.", variant: "destructive" });
     } finally {
         setIsProcessing(false);
+        setConfirmText("");
     }
   };
 
@@ -74,15 +82,28 @@ export function EliminacionEventualesView() {
             <AlertDialogHeader>
                 <AlertDialogTitle>¿Está absolutamente seguro?</AlertDialogTitle>
                 <AlertDialogDescription>
-                Esta acción es irreversible. Se eliminarán todas las asignaciones marcadas como eventuales.
-                No podrá recuperar estos datos.
+                Esta acción es irreversible. Para confirmar, por favor escriba la palabra <span className="font-bold text-destructive">ELIMINAR</span> en el campo de abajo.
                 </AlertDialogDescription>
             </AlertDialogHeader>
+             <div className="py-2">
+                <Label htmlFor="confirm-delete-text" className="sr-only">Confirmación</Label>
+                <Input 
+                    id="confirm-delete-text"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    placeholder="Escriba ELIMINAR aquí"
+                    autoFocus
+                />
+            </div>
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleEliminar} className="bg-destructive hover:bg-destructive/90">
-                    Sí, eliminar todo
-                </AlertDialogAction>
+                <AlertDialogCancel onClick={() => setConfirmText("")}>Cancelar</AlertDialogCancel>
+                <Button 
+                    onClick={handleEliminar} 
+                    variant="destructive"
+                    disabled={isConfirmButtonDisabled}
+                >
+                    Eliminar Definitivamente
+                </Button>
             </AlertDialogFooter>
             </AlertDialogContent>
       </AlertDialog>
