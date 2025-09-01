@@ -23,14 +23,15 @@ export type EmpresaWithId = Empresa & { id: string };
 // Configuration for the primary company, which holds the list of all other companies.
 // This is the bootstrap configuration.
 export const primaryEmpresaConfig: Empresa = {
-    nombre: "Oficina Laspiur",
-    cuit: "20165475535",
+    nombre: "Directorio de Oficinas",
+    cuit: "00000000000", // CUIT for the central directory itself
     firebaseConfig: {
-      apiKey: "AIzaSyBJTWFDM421pUDAjaR5c4wchlywO7Tu38E",
-      authDomain: "oficina-72505.firebaseapp.com",
-      projectId: "oficina-72505",
-      storageBucket: "oficina-72505.appspot.com",
-      messagingSenderId: "764425604004",
-      appId: "1:764425604004:web:e2a3f3b4c5d6e7f8a9b0c1"
+      apiKey: "AIzaSyCPiMgTcPgJJVCVc9UtUZ7C5U4ECIFkDI8",
+      authDomain: "agromenu-ccb11.firebaseapp.com",
+      projectId: "agromenu-ccb11",
+      storageBucket: "agromenu-ccb11.appspot.com",
+      messagingSenderId: "1058404932388",
+      appId: "1:1058404932388:web:5f796a1d19ef455b3b31b1",
+      measurementId: "G-V40ZLJL490"
     }
 };

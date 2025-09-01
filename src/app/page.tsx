@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { type Empresa, primaryEmpresaConfig } from '@/lib/empresas';
+import { type Empresa } from '@/lib/empresas';
 import { getEmpresas, initializePrimaryFirebase } from '@/lib/services/empresas';
 
 import { Button } from "@/components/ui/button";
@@ -32,11 +32,7 @@ export default function CompanySelectorPage() {
       try {
         initializePrimaryFirebase();
         const empresasData = await getEmpresas();
-        // Add the primary company to the list if it's not already there
-        const primaryExists = empresasData.some(e => e.cuit === primaryEmpresaConfig.cuit);
-        const allEmpresas = primaryExists ? empresasData : [primaryEmpresaConfig, ...empresasData];
-
-        setEmpresas(allEmpresas.sort((a,b) => a.nombre.localeCompare(b.nombre)));
+        setEmpresas(empresasData.sort((a,b) => a.nombre.localeCompare(b.nombre)));
       } catch (error) {
         console.error("Error loading companies:", error);
         toast({
@@ -89,9 +85,7 @@ export default function CompanySelectorPage() {
       // Refresh the list of companies
       setIsLoading(true);
       const empresasData = await getEmpresas();
-      const primaryExists = empresasData.some(e => e.cuit === primaryEmpresaConfig.cuit);
-      const allEmpresas = primaryExists ? empresasData : [primaryEmpresaConfig, ...empresasData];
-      setEmpresas(allEmpresas.sort((a,b) => a.nombre.localeCompare(b.nombre)));
+      setEmpresas(empresasData.sort((a,b) => a.nombre.localeCompare(b.nombre)));
       setIsLoading(false);
   }
 

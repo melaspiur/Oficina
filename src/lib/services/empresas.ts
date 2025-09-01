@@ -1,13 +1,13 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, type Firestore } from "firebase/firestore";
-import { primaryEmpresaConfig, type Empresa, type EmpresaWithId, type FirebaseConfig } from "@/lib/empresas";
+import { primaryEmpresaConfig, type Empresa, type EmpresaWithId } from "@/lib/empresas";
 
 let primaryDb: Firestore | null = null;
 const PRIMARY_APP_NAME = "primary-admin-app";
-const EMPRESAS_COLLECTION = "empresas";
+const EMPRESAS_COLLECTION = "menuoficina";
 
 /**
- * Initializes a connection to the primary Firebase project (Oficina Laspiur)
+ * Initializes a connection to the primary Firebase project
  * which is used to manage the list of all companies.
  */
 export function initializePrimaryFirebase() {
