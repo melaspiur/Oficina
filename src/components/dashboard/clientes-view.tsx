@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import * as XLSX from "xlsx"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -11,7 +12,7 @@ import {
   TableCell,
 } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react"
+import { PlusCircle, MoreHorizontal, Edit, Trash2, FileDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { ClienteDialog } from "./cliente-dialog"
 import type { Cliente, ClienteWithId } from "@/lib/types"
@@ -118,16 +119,55 @@ export function ClientesView() {
       setClienteToDelete(null);
     }
   };
+  
+  const handleExportExcel = () => {
+    const dataForSheet = clientes.map(c => ({
+        'Código': c.codigo,
+        'Nombre': c.nombre,
+        'CUIT': c.cuit,
+        'Domicilio': c.domicilio || '',
+        'Localidad': c.localidad || '',
+        'Provincia': c.provincia || '',
+        'Mail': c.mail || '',
+        'Celular': c.celular || '',
+        'Tipo': c.tipo,
+        'Categoría': c.categoria,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+    worksheet['!cols'] = [
+      { wch: 8 },  // Código
+      { wch: 35 }, // Nombre
+      { wch: 15 }, // CUIT
+      { wch: 30 }, // Domicilio
+      { wch: 20 }, // Localidad
+      { wch: 20 }, // Provincia
+      { wch: 30 }, // Mail
+      { wch: 15 }, // Celular
+      { wch: 12 }, // Tipo
+      { wch: 10 }, // Categoría
+    ];
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes");
+    XLSX.writeFile(workbook, "Lista_de_Clientes.xlsx");
+  };
 
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Lista de Clientes</h2>
-        <Button onClick={handleAddNew}>
-          <PlusCircle className="mr-2" />
-          Nuevo Cliente
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportExcel} disabled={isLoading || clientes.length === 0}>
+                <FileDown className="mr-2" />
+                Exportar a Excel
+            </Button>
+            <Button onClick={handleAddNew}>
+            <PlusCircle className="mr-2" />
+            Nuevo Cliente
+            </Button>
+        </div>
       </div>
       <div className="border rounded-lg">
         <Table>
