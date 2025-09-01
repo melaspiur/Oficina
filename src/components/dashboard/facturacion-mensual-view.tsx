@@ -22,6 +22,7 @@ import { generarFacturacion, type GenerarFacturacionOutput } from "@/ai/flows/ge
 import { mesesList, type Movimiento, type ConfiguracionComprobantes, type ClienteFacturado } from "@/lib/types"
 import { getConfiguracionComprobantes, updateConfiguracionComprobantes } from "@/lib/services/configuracion"
 import { addMovimientosBatch } from "@/lib/services/movimientos"
+import type { FirebaseConfig } from "@/lib/empresas"
 
 const formSchema = z.object({
   mes: z.string().min(1, "Debe seleccionar un mes."),
@@ -79,6 +80,13 @@ export function FacturacionMensualView() {
       });
       return;
     }
+    
+    const firebaseConfigStr = localStorage.getItem('selectedFirebaseConfig');
+    if (!firebaseConfigStr) {
+      toast({ title: "Error de Configuración", description: "No se encontró la configuración de la empresa. Por favor, vuelva a iniciar sesión.", variant: "destructive" });
+      return;
+    }
+    const firebaseConfig: FirebaseConfig = JSON.parse(firebaseConfigStr);
 
     setIsProcessing(true)
     setFacturacionResult(null)
@@ -86,7 +94,8 @@ export function FacturacionMensualView() {
     try {
       const result = await generarFacturacion({ 
         mes: mesSeleccionado.toLowerCase(),
-        fechaFacturacion: data.fechaFacturacion.toISOString()
+        fechaFacturacion: data.fechaFacturacion.toISOString(),
+        firebaseConfig: firebaseConfig
       });
       setFacturacionResult(result);
        toast({

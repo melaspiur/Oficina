@@ -9,18 +9,31 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { getClientes, type ClienteWithId } from '@/lib/services/clientes';
 import { getNovedades, type NovedadWithId } from '@/lib/services/novedades';
 import { getAsignaciones } from '@/lib/services/asignaciones';
 import { getConfiguracionComprobantes } from '@/lib/services/configuracion';
+import { initializeFirebaseClient } from '@/lib/firebase';
 import type { ClienteFacturado } from '@/lib/types';
+import type { FirebaseConfig } from '@/lib/empresas';
 
 
 // Esquema de entrada
+const FirebaseConfigSchema = z.object({
+  apiKey: z.string(),
+  authDomain: z.string(),
+  projectId: z.string(),
+  storageBucket: z.string(),
+  messagingSenderId: z.string(),
+  appId: z.string(),
+  measurementId: z.string().optional(),
+});
+
 const GenerarFacturacionInputSchema = z.object({
   mes: z.string().describe('El mes para el cual generar la facturación (e.g., "enero").'),
-  fechaFacturacion: z.string().describe('La fecha de la factura en formato ISO.')
+  fechaFacturacion: z.string().describe('La fecha de la factura en formato ISO.'),
+  firebaseConfig: FirebaseConfigSchema.describe('La configuración de Firebase para la empresa.'),
 });
 export type GenerarFacturacionInput = z.infer<typeof GenerarFacturacionInputSchema>;
 
@@ -65,7 +78,10 @@ const generarFacturacionFlow = ai.defineFlow(
     outputSchema: GenerarFacturacionOutputSchema,
   },
   async (input) => {
-    const { mes, fechaFacturacion } = input;
+    const { mes, fechaFacturacion, firebaseConfig } = input;
+    
+    // Initialize Firebase for this server-side execution
+    initializeFirebaseClient(firebaseConfig as FirebaseConfig);
     
     // 1. Obtener todos los datos necesarios
     const [clientes, novedades, asignaciones, config] = await Promise.all([
