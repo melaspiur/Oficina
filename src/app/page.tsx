@@ -138,6 +138,9 @@ export default function CompanySelectorPage() {
              {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Continuar
           </Button>
+           <p className="text-center text-sm text-muted-foreground pt-2">
+            Oficina Ejemplo: 20222222223
+          </p>
         </CardContent>
       </Card>
       
