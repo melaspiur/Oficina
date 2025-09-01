@@ -13,10 +13,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, PlusCircle, Loader2, Edit } from "lucide-react"
-import type { ClienteWithId, NovedadWithId, AsignacionViewModel } from "@/lib/types"
+import type { ClienteWithId, NovedadWithId, AsignacionViewModel, AsignacionWithId } from "@/lib/types"
 import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
-import { getAsignacionesByClienteId, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
+import { getAsignacionesByClienteId, addAsignacion, updateAsignacion, deleteAsignacion, deleteAsignacionesBatch } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
 import { Combobox } from "@/components/ui/combobox"
@@ -78,11 +78,37 @@ export function AsignacionClienteView() {
       setIsLoadingAsignaciones(true);
       try {
           const asignacionesData = await getAsignacionesByClienteId(clienteId);
+
+          // --- Cleanup Duplicate Assignments ---
+          const seen = new Map<string, AsignacionWithId>();
+          const duplicatesToDelete: string[] = [];
+
+          asignacionesData.forEach(asignacion => {
+              const key = `${asignacion.clienteId}-${asignacion.novedadId}`;
+              if (seen.has(key)) {
+                  duplicatesToDelete.push(asignacion.id);
+              } else {
+                  seen.set(key, asignacion);
+              }
+          });
+          
+          let cleanAsignaciones = Array.from(seen.values());
+
+          if (duplicatesToDelete.length > 0) {
+              await deleteAsignacionesBatch(duplicatesToDelete);
+              toast({
+                  title: "Duplicados Eliminados",
+                  description: `Se eliminaron ${duplicatesToDelete.length} asignaciones duplicadas para este cliente.`,
+              });
+          }
+          // --- End Cleanup ---
+
+
           const novedadesMap = new Map(novedades.map(n => [n.id, n]));
           const cliente = clientes.find(c => c.id === clienteId);
           if (!cliente) return;
 
-          const viewModel: AsignacionViewModel[] = asignacionesData.map(a => {
+          const viewModel: AsignacionViewModel[] = cleanAsignaciones.map(a => {
               const novedad = novedadesMap.get(a.novedadId);
               if (!novedad) return null;
               return {
