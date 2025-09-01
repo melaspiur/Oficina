@@ -50,6 +50,7 @@ import {
   KeyRound,
   Loader2,
   Undo2,
+  List,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
