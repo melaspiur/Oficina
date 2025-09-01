@@ -23,6 +23,7 @@ export type AsignacionViewModel = {
   novedadNombre: string;
   cantidad: number;
   importe: number;
+  eventual: boolean;
 };
 
 export type Cliente = {
@@ -84,6 +85,7 @@ export type Asignacion = {
     clienteId: string;
     novedadId: string;
     cantidad: number;
+    eventual: boolean;
 }
 
 export type AsignacionWithId = Asignacion & { id: string };

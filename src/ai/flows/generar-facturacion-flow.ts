@@ -12,7 +12,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getClientes, type ClienteWithId } from '@/lib/services/clientes';
 import { getNovedades, type NovedadWithId } from '@/lib/services/novedades';
-import { getAsignaciones } from '@/lib/services/asignaciones';
+import { getAsignaciones, deleteAsignacionesEventuales, type AsignacionWithId } from '@/lib/services/asignaciones';
 import { getConfiguracionComprobantes } from '@/lib/services/configuracion';
 import { initializeFirebaseClient } from '@/lib/firebase';
 import type { ClienteFacturado } from '@/lib/types';
@@ -61,6 +61,7 @@ const GenerarFacturacionOutputSchema = z.object({
   clientes: z.array(ClienteFacturadoSchema),
   totalGeneral: z.number(),
   ultimoNumeroFactura: z.number(),
+  asignacionesEventualesBorradas: z.array(z.string()).optional(),
 });
 export type GenerarFacturacionOutput = z.infer<typeof GenerarFacturacionOutputSchema>;
 
@@ -95,6 +96,7 @@ const generarFacturacionFlow = ai.defineFlow(
 
     const clientesMap = new Map(clientes.map(c => [c.id, c]));
     const novedadesMap = new Map(novedades.map(n => [n.id, n]));
+    const asignacionesEventuales: AsignacionWithId[] = [];
 
     // 2. Mapear las asignaciones a cada cliente
     const facturacionPorCliente = new Map<string, { cliente: ClienteWithId; novedades: any[] }>();
@@ -123,10 +125,19 @@ const generarFacturacionFlow = ai.defineFlow(
                 importe: asignacion.cantidad * novedad.importe,
                 numeroFactura: ultimoNumeroFactura,
             });
+             if (asignacion.eventual) {
+                asignacionesEventuales.push(asignacion);
+            }
         }
       }
     }
     
+    // Delete eventual assignments after processing them for billing
+    if (asignacionesEventuales.length > 0) {
+        await deleteAsignacionesEventuales(asignacionesEventuales);
+    }
+
+
     // 3. Formatear la salida
     const clientesFacturados: ClienteFacturado[] = [];
     let totalGeneral = 0;
@@ -150,6 +161,7 @@ const generarFacturacionFlow = ai.defineFlow(
       clientes: clientesFacturados.sort((a,b) => a.clienteCodigo - b.clienteCodigo),
       totalGeneral,
       ultimoNumeroFactura: ultimoNumeroFactura,
+      asignacionesEventualesBorradas: asignacionesEventuales.map(a => a.id),
     };
   }
 );

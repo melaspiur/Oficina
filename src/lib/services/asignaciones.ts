@@ -119,3 +119,16 @@ export async function deleteAllAsignaciones() {
     });
     await batch.commit();
 }
+
+export async function deleteAsignacionesEventuales(asignaciones: AsignacionWithId[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const batch = writeBatch(db);
+    asignaciones.forEach(a => {
+        if (a.eventual) {
+            const docRef = doc(db, "asignaciones", a.id);
+            batch.delete(docRef);
+        }
+    });
+    await batch.commit();
+}

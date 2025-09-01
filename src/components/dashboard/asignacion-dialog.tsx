@@ -13,27 +13,31 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import type { AsignacionViewModel } from "@/lib/types"
+import { Checkbox } from "../ui/checkbox"
 
 type AsignacionDialogProps = {
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
-  onSave: (nuevaCantidad: number) => void
+  onSave: (id: string, nuevaCantidad: number, nuevoEventual: boolean) => void
   asignacion: AsignacionViewModel | null
 }
 
 export function AsignacionDialog({ isOpen, onOpenChange, onSave, asignacion }: AsignacionDialogProps) {
   const [cantidad, setCantidad] = React.useState<number | string>("")
+  const [isEventual, setIsEventual] = React.useState(false)
 
   React.useEffect(() => {
     if (asignacion) {
       setCantidad(asignacion.cantidad)
+      setIsEventual(asignacion.eventual || false)
     }
   }, [asignacion])
 
   const handleSave = () => {
+    if (!asignacion) return;
     const cantidadNum = typeof cantidad === 'string' ? parseFloat(cantidad.replace(',', '.')) : cantidad;
     if (!isNaN(cantidadNum) && cantidadNum > 0) {
-      onSave(cantidadNum)
+      onSave(asignacion.id, cantidadNum, isEventual)
     }
   }
 
@@ -45,7 +49,7 @@ export function AsignacionDialog({ isOpen, onOpenChange, onSave, asignacion }: A
         <DialogHeader>
           <DialogTitle>Editar Asignación</DialogTitle>
           <DialogDescription>
-            Modifique la cantidad para la novedad asignada.
+            Modifique los datos para la novedad asignada.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -68,6 +72,10 @@ export function AsignacionDialog({ isOpen, onOpenChange, onSave, asignacion }: A
               className="mt-1"
             />
           </div>
+           <div className="flex items-center space-x-2">
+              <Checkbox id="eventual-edit" checked={isEventual} onCheckedChange={(checked) => setIsEventual(Boolean(checked))} />
+              <Label htmlFor="eventual-edit">Es Eventual</Label>
+            </div>
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>

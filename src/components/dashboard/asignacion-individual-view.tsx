@@ -12,14 +12,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, PlusCircle, Loader2, Edit } from "lucide-react"
-import type { ClienteWithId, NovedadWithId, AsignacionViewModel, AsignacionWithId } from "@/lib/types"
+import { Trash2, PlusCircle, Loader2, Edit, Pin } from "lucide-react"
+import type { ClienteWithId, NovedadWithId, AsignacionViewModel, AsignacionWithId, Asignacion } from "@/lib/types"
 import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
-import { getAsignacionesByNovedadId, addAsignacion, updateAsignacion, deleteAsignacion } from "@/lib/services/asignaciones"
+import { getAsignacionesByNovedadId, addAsignacion, updateAsignacion, deleteAsignacion, addAsignacionesBatch, deleteAllAsignaciones, getAsignaciones } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AsignacionDialog } from "./asignacion-dialog"
 import { Combobox } from "@/components/ui/combobox"
+import { Checkbox } from "../ui/checkbox"
+import { Badge } from "../ui/badge"
 
 export function AsignacionIndividualView() {
   // Global data
@@ -33,6 +35,7 @@ export function AsignacionIndividualView() {
   // State for the "add new" form
   const [selectedClienteId, setSelectedClienteId] = React.useState<string | null>(null)
   const [newCantidad, setNewCantidad] = React.useState<number | string>(1.00)
+  const [isEventual, setIsEventual] = React.useState(false)
 
   // UI State
   const [isLoading, setIsLoading] = React.useState(true)
@@ -60,7 +63,11 @@ export function AsignacionIndividualView() {
     const fetchInitialData = async () => {
         setIsLoading(true);
         try {
-            const [clientesData, novedadesData] = await Promise.all([getClientes(), getNovedades()]);
+            const [clientesData, novedadesData, asignacionesData] = await Promise.all([
+                getClientes(), 
+                getNovedades(),
+                getAsignaciones()
+            ]);
             setClientes(clientesData);
             
             const uniqueNovedades = Array.from(new Map(novedadesData.map(item => [item.codigo, item])).values());
@@ -98,6 +105,7 @@ export function AsignacionIndividualView() {
                   novedadNombre: novedad.nombre,
                   cantidad: a.cantidad,
                   importe: novedad.importe * a.cantidad,
+                  eventual: a.eventual || false,
               };
           }).filter((item): item is AsignacionViewModel => item !== null);
 
@@ -136,11 +144,13 @@ export function AsignacionIndividualView() {
             clienteId: selectedClienteId,
             novedadId: selectedNovedad.id,
             cantidad: cantidadNum,
+            eventual: isEventual,
         });
         toast({ title: "Asignación Creada", description: "La novedad se asignó correctamente." });
         fetchAsignacionesForNovedad(selectedNovedad.id); // Refresh list
         setSelectedClienteId(null);
         setNewCantidad(1.00);
+        setIsEventual(false);
     } catch (error: any) {
         console.error("Error adding service:", error);
         toast({ title: "Error", description: error.message || "No se pudo guardar la asignación.", variant: "destructive" });
@@ -163,11 +173,11 @@ export function AsignacionIndividualView() {
     setIsDialogEditOpen(true);
   };
 
-  const handleSaveEdit = async (nuevaCantidad: number) => {
+  const handleSaveEdit = async (id: string, nuevaCantidad: number, nuevoEventual: boolean) => {
     if (!asignacionToEdit) return;
     try {
-      await updateAsignacion(asignacionToEdit.id, { cantidad: nuevaCantidad });
-      toast({ title: "Asignación Actualizada", description: "La cantidad se actualizó correctamente." });
+      await updateAsignacion(id, { cantidad: nuevaCantidad, eventual: nuevoEventual });
+      toast({ title: "Asignación Actualizada", description: "La asignación se actualizó correctamente." });
       if(selectedNovedad) fetchAsignacionesForNovedad(selectedNovedad.id);
     } catch (error) {
       console.error("Error updating service:", error);
@@ -217,7 +227,7 @@ export function AsignacionIndividualView() {
                 <CardDescription>Añada un nuevo cliente a la novedad seleccionada.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-4 items-end">
                         <div className="space-y-2">
                             <Label htmlFor="cliente-select">Cliente</Label>
                             <Combobox 
@@ -239,6 +249,14 @@ export function AsignacionIndividualView() {
                                 value={String(newCantidad).replace('.',',')}
                                 onChange={(e) => setNewCantidad(e.target.value)}
                             />
+                        </div>
+                        <div className="flex items-center space-x-2 h-10">
+                            <Checkbox 
+                                id="eventual-check-individual" 
+                                checked={isEventual} 
+                                onCheckedChange={(checked) => setIsEventual(Boolean(checked))}
+                            />
+                            <Label htmlFor="eventual-check-individual" className="whitespace-nowrap">Es Eventual</Label>
                         </div>
                         <div>
                             <Button onClick={handleAddServicio} className="w-full">
@@ -262,13 +280,14 @@ export function AsignacionIndividualView() {
                         <TableRow>
                         <TableHead>Cliente</TableHead>
                         <TableHead className="text-right">Cantidad</TableHead>
+                        <TableHead className="text-center">Tipo</TableHead>
                         <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoadingAsignaciones ? (
                              <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24">
+                                <TableCell colSpan={4} className="text-center h-24">
                                     <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                                 </TableCell>
                             </TableRow>
@@ -277,6 +296,14 @@ export function AsignacionIndividualView() {
                             <TableRow key={asignacion.id}>
                                 <TableCell className="font-medium">{`${asignacion.clienteCodigo} - ${asignacion.clienteNombre}`}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(asignacion.cantidad)}</TableCell>
+                                <TableCell className="text-center">
+                                    {asignacion.eventual && (
+                                        <Badge variant="outline">
+                                            <Pin className="mr-1 h-3 w-3"/>
+                                            Eventual
+                                        </Badge>
+                                    )}
+                                </TableCell>
                                 <TableCell className="text-right">
                                 <Button variant="ghost" size="icon" onClick={() => handleEditServicio(asignacion)}>
                                     <Edit className="h-4 w-4" />
@@ -289,7 +316,7 @@ export function AsignacionIndividualView() {
                         ))
                         ) : (
                         <TableRow>
-                            <TableCell colSpan={3} className="text-center h-24">
+                            <TableCell colSpan={4} className="text-center h-24">
                             Esta novedad no tiene clientes asignados.
                             </TableCell>
                         </TableRow>
