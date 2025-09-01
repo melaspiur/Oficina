@@ -36,6 +36,20 @@ export async function addAsignacion(asignacion: Asignacion) {
     return docRef.id;
 }
 
+export async function addAsignacionesBatch(asignaciones: Asignacion[]) {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    const asignacionesCollection = collection(db, "asignaciones");
+    const batch = writeBatch(db);
+
+    asignaciones.forEach(asignacion => {
+        const docRef = doc(asignacionesCollection);
+        batch.set(docRef, asignacion);
+    });
+
+    await batch.commit();
+}
+
 export async function updateAsignacion(id: string, asignacion: Partial<Asignacion>) {
     const db = getClientDb();
     if (!db) throw new Error("Firestore is not initialized");

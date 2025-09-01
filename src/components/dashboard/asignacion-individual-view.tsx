@@ -179,7 +179,7 @@ const initialAssignmentsData = `
 0000184;PICHI PUL S.A.;23;BALANCE;1
 0000187;PAGGI GUILLERMO ARIEL;1;MENSUAL IVA/IIBB;1
 0000187;PAGGI GUILLERMO ARIEL;22;DDJJ GANANC./B.PERS.;665000
-0000187;PAGGI GUILLERMO ARIEL;16;IP2 GRUESA SIEMBRA;1
+0-0000187;PAGGI GUILLERMO ARIEL;16;IP2 GRUESA SIEMBRA;1
 0000187;PAGGI GUILLERMO ARIEL;17;IP1 FINA-EXISTENCIA;1
 0000188;ROBILOTTE EMANUEL;1;MENSUAL IVA/IIBB;1
 0000188;ROBILOTTE EMANUEL;22;DDJJ GANANC./B.PERS.;665000
@@ -325,7 +325,7 @@ const initialAssignmentsData = `
 0000265;GONZALEZ LAURA KARINA;3;MENSUALIZADO MONOTRI;1
 0000265;GONZALEZ LAURA KARINA;10;RECATEG.MONOTRIBUTO;1
 0000265;GONZALEZ LAURA KARINA;10;RECATEG.MONOTRIBUTO;1
-0000268;ALONSO VILMA MARISA;3;MENSUALIZADO MONOTRI;1
+0-0000268;ALONSO VILMA MARISA;3;MENSUALIZADO MONOTRI;1
 0000268;ALONSO VILMA MARISA;10;RECATEG.MONOTRIBUTO;1
 0000268;ALONSO VILMA MARISA;10;RECATEG.MONOTRIBUTO;1
 0000269;NUESCH GUILLERMO RODOLFO;3;MENSUALIZADO MONOTRI;1
@@ -360,106 +360,96 @@ const initialAssignmentsData = `
 `
 
 export function AsignacionIndividualView() {
-    const [isLoading, setIsLoading] = React.useState(true);
-    const [hasLoaded, setHasLoaded] = React.useState(false);
-    const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [isProcessing, setIsProcessing] = React.useState(false)
+  const { toast } = useToast()
 
-    React.useEffect(() => {
-        const fetchData = async () => {
-            if (hasLoaded) return;
-            
-            try {
-                const asignaciones = await getAsignaciones();
-                if (asignaciones.length === 0) {
-                    toast({ title: "Iniciando carga de asignaciones...", description: "Por favor, espere mientras se cargan los datos iniciales." });
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const asignacionesExistentes = await getAsignaciones();
+        if (asignacionesExistentes.length === 0) {
+          toast({
+            title: "Iniciando carga de asignaciones",
+            description: "La base de datos de asignaciones está vacía, se procederá a la carga inicial.",
+          });
+          setIsProcessing(true);
 
-                    const [clientes, novedades] = await Promise.all([getClientes(), getNovedades()]);
-                    const clientesMap = new Map(clientes.map(c => [c.codigo, c.id]));
-                    const novedadesMap = new Map(novedades.map(n => [n.codigo, n.id]));
+          const [clientes, novedades] = await Promise.all([getClientes(), getNovedades()]);
+          const clientesMap = new Map(clientes.map(c => [c.codigo, c.id]));
+          const novedadesMap = new Map(novedades.map(n => [n.codigo, n.id]));
 
-                    const parsedData = initialAssignmentsData
-                        .trim()
-                        .split('\n')
-                        .map(line => {
-                            const [clienteCodigo, _clienteNombre, novedadCodigo, _novedadNombre, cantidad] = line.split(';').map(s => s.trim());
-                            
-                            // Clean up malformed lines from source data
-                            const cleanClienteCodigo = clienteCodigo.replace(/[a-zA-Z-]/g, '');
+          const lines = initialAssignmentsData.trim().split('\n');
+          const asignacionesParaCargar: Asignacion[] = [];
 
-                            return {
-                                clienteCodigo: parseInt(cleanClienteCodigo, 10),
-                                novedadCodigo: parseInt(novedadCodigo, 10),
-                                cantidad: parseFloat(cantidad.replace(',', '.')) || 1
-                            };
-                        });
-                    
-                    const asignacionesAGuardar: Asignacion[] = [];
-                    const notFound: string[] = [];
+          lines.forEach(line => {
+            const parts = line.split(';').map(p => p.trim());
+            const clienteCodigo = parseInt(parts[0], 10);
+            const novedadCodigo = parseInt(parts[2], 10);
+            const cantidad = parseFloat(parts[4].replace(',', '.')) || 1;
 
-                    for (const item of parsedData) {
-                        const clienteId = clientesMap.get(item.clienteCodigo);
-                        const novedadId = novedadesMap.get(item.novedadCodigo);
-                        
-                        if (clienteId && novedadId) {
-                            asignacionesAGuardar.push({
-                                clienteId,
-                                novedadId,
-                                cantidad: item.cantidad
-                            });
-                        } else {
-                            if(!clienteId) notFound.push(`Cliente código ${item.clienteCodigo}`);
-                        }
-                    }
-                    
-                    // Remove duplicates
-                    const uniqueAsignaciones = Array.from(new Map(asignacionesAGuardar.map(a => `${a.clienteId}-${a.novedadId}`, a)).values());
+            const clienteId = clientesMap.get(clienteCodigo);
+            const novedadId = novedadesMap.get(novedadCodigo);
 
-                    if (uniqueAsignaciones.length > 0) {
-                        await addAsignacionesBatch(uniqueAsignaciones);
-                        toast({ title: "Carga Inicial Completada", description: `Se cargaron ${uniqueAsignaciones.length} asignaciones.` });
-                    }
-                    if (notFound.length > 0) {
-                         toast({ title: "Algunos clientes no se encontraron", description: `No se procesaron asignaciones para: ${[...new Set(notFound)].join(', ')}`, variant: "destructive", duration: 10000 });
-                    }
-                }
-            } catch (error) {
-                 console.error("Error durante la carga inicial de asignaciones:", error);
-                 toast({ title: "Error en la Carga Inicial", description: "No se pudieron cargar los datos.", variant: "destructive" });
-            } finally {
-                setIsLoading(false);
-                setHasLoaded(true);
+            if (clienteId && novedadId) {
+              asignacionesParaCargar.push({
+                clienteId,
+                novedadId,
+                cantidad,
+              });
             }
-        };
+          });
+          
+          const uniqueAsignaciones = Array.from(new Map(asignacionesParaCargar.map(a => [`${a.clienteId}-${a.novedadId}`, a])).values());
 
-        fetchData();
-    }, [hasLoaded, toast]);
-    
+          await addAsignacionesBatch(uniqueAsignaciones);
+
+          toast({
+            title: "Carga Inicial Completada",
+            description: `Se han cargado ${uniqueAsignaciones.length} asignaciones.`,
+          });
+        }
+      } catch (error) {
+        console.error("Error en la carga inicial de asignaciones:", error);
+        toast({
+          title: "Error en Carga Inicial",
+          description: "No se pudieron cargar las asignaciones iniciales.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+        setIsProcessing(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
+
+
   return (
-    <Card className="mt-6">
+    <div className="p-6">
+      <Card>
         <CardHeader>
-            <CardTitle>Asignación Individual</CardTitle>
-            <CardDescription>
-                Esta vista es para la carga inicial de datos. Las asignaciones de novedades a clientes se han cargado automáticamente.
-                Para gestionar asignaciones, utilice la pestaña "Asignación por Cliente".
-            </CardDescription>
+          <CardTitle>Asignación Individual Masiva</CardTitle>
+          <CardDescription>
+            Este panel se utiliza para la carga inicial de datos de asignaciones. Si ya existen datos, no se realizará ninguna acción.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-            {isLoading ? (
-                <div className="flex flex-col items-center justify-center h-40 space-y-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    <p className="text-muted-foreground">Verificando y cargando datos de asignación...</p>
-                </div>
-            ) : (
-                 <div className="flex flex-col items-center justify-center h-40 space-y-4">
-                    <p className="text-center text-muted-foreground">La carga de datos inicial ha finalizado. Puede gestionar las asignaciones desde la otra pestaña.</p>
-                </div>
-            )}
+          {isLoading || isProcessing ? (
+            <div className="flex flex-col items-center justify-center h-40 gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {isLoading ? "Verificando datos..." : "Procesando carga inicial..."}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-40 gap-4">
+                 <p className="text-muted-foreground">La carga inicial de asignaciones ya ha sido realizada.</p>
+            </div>
+          )}
         </CardContent>
-        <CardFooter>
-            <p className="text-xs text-muted-foreground">
-                Nota: La carga automática se ejecuta una sola vez. Si necesita volver a cargar los datos, deberá vaciar la colección 'asignaciones' en Firebase.
-            </p>
-        </CardFooter>
-    </Card>
+      </Card>
+    </div>
   )
 }
