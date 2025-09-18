@@ -22,7 +22,7 @@ import {
 
 type ComboboxProps = {
     options: { value: string; label: string }[];
-    value: string | null;
+    value: string | null | undefined;
     onValueChange: (value: string) => void;
     placeholder?: string;
     searchPlaceholder?: string;
@@ -60,15 +60,15 @@ export function Combobox({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
-            <CommandEmpty>{notFoundMessage}</CommandEmpty>
             <CommandList>
+                <CommandEmpty>{notFoundMessage}</CommandEmpty>
                 <CommandGroup>
                     {options.map((option) => (
                     <CommandItem
                         key={option.value}
-                        value={option.label} // Value used for filtering
-                        onSelect={() => {
-                            onValueChange(option.value === value ? "" : option.value)
+                        value={option.value}
+                        onSelect={(currentValue) => {
+                            onValueChange(currentValue === value ? "" : currentValue)
                             setOpen(false)
                         }}
                     >
