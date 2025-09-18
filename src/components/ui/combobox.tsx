@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,6 +12,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 import {
   Popover,
@@ -58,27 +60,29 @@ export function Combobox({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandEmpty>{notFoundMessage}</CommandEmpty>
-          <CommandGroup>
-            {options.map((option) => (
-              <CommandItem
-                key={option.value}
-                value={option.value}
-                onSelect={(currentValue) => {
-                  onValueChange(currentValue === value ? "" : currentValue)
-                  setOpen(false)
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === option.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {option.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+            <CommandEmpty>{notFoundMessage}</CommandEmpty>
+            <CommandList>
+                <CommandGroup>
+                    {options.map((option) => (
+                    <CommandItem
+                        key={option.value}
+                        value={option.value}
+                        onSelect={(currentValue) => {
+                            onValueChange(currentValue === value ? "" : currentValue)
+                            setOpen(false)
+                        }}
+                    >
+                        <Check
+                        className={cn(
+                            "mr-2 h-4 w-4",
+                            value === option.value ? "opacity-100" : "opacity-0"
+                        )}
+                        />
+                        {option.label}
+                    </CommandItem>
+                    ))}
+                </CommandGroup>
+            </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
