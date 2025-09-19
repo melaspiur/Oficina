@@ -216,6 +216,7 @@ export function FacturacionEventualView() {
                       <FormItem className="flex flex-col">
                         <FormLabel>Cliente *</FormLabel>
                         <Combobox
+                          modal={false}
                           options={clienteOptions}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -242,16 +243,18 @@ export function FacturacionEventualView() {
                                 onChange={handleDateChange}
                             />
                             </FormControl>
-                            <Popover>
+                            <Popover modal={false}>
                             <PopoverTrigger asChild>
                                 <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground">
                                 <CalendarIcon className="h-4 w-4" />
                                 <span className="sr-only">Abrir calendario</span>
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent 
-                                className="w-auto p-0" 
+                            <PopoverContent
+                                className="z-[9999] w-auto p-0"
                                 align="start"
+                                sideOffset={4}
+                                collisionPadding={8}
                                 onOpenAutoFocus={(e) => e.preventDefault()}
                             >
                                 <Calendar
@@ -278,6 +281,7 @@ export function FacturacionEventualView() {
                       <FormItem className="flex flex-col">
                         <FormLabel>Novedad *</FormLabel>
                         <Combobox
+                          modal={false}
                           options={novedadOptions}
                           value={field.value}
                           onValueChange={field.onChange}
