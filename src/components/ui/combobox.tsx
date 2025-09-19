@@ -1,5 +1,4 @@
 "use client"
-
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -29,7 +28,7 @@ export function Combobox({
   searchPlaceholder = "Search...",
   notFoundMessage = "No option found.",
   disabled = false,
-  modal = false, // <- importante cuando está dentro de Dialog/Sheet
+  modal = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -43,15 +42,21 @@ export function Combobox({
           className="w-full justify-between"
           disabled={disabled}
         >
-          {value
-            ? options.find((o) => o.value === value)?.label
-            : placeholder}
+          {value ? options.find((o) => o.value === value)?.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
 
-      {/* z-50 + ancho correcto con var(...) */}
-      <PopoverContent className="z-50 w-[var(--radix-popover-trigger-width)] p-0">
+      <PopoverContent
+        // z-index MUY alto para ganar al overlay del Dialog/Sheet
+        className="z-[9999] w-[var(--radix-popover-trigger-width)] p-0"
+        // evita que Radix mueva el foco y dispare estilos del overlay
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        // opcionales: mejorar ubicación
+        align="start"
+        sideOffset={4}
+        collisionPadding={8}
+      >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
