@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -68,7 +67,10 @@ export function Combobox({
                         key={option.value}
                         value={option.value}
                         onSelect={(currentValue) => {
-                            onValueChange(currentValue === value ? "" : currentValue)
+                            // This ensures that if the user re-selects the same item, it stays selected.
+                            // If they select a different item, it updates.
+                            // The `currentValue` from onSelect is the `value` prop of CommandItem.
+                            onValueChange(currentValue === value ? value : currentValue)
                             setOpen(false)
                         }}
                     >
