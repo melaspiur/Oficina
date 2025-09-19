@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -250,7 +249,11 @@ export function FacturacionEventualView() {
                                 <span className="sr-only">Abrir calendario</span>
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent 
+                                className="w-auto p-0" 
+                                align="start"
+                                onOpenAutoFocus={(e) => e.preventDefault()}
+                            >
                                 <Calendar
                                     mode="single"
                                     selected={parseDate(field.value)}
