@@ -86,3 +86,14 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Sube el popper wrapper por encima de cualquier overlay */
+[data-radix-popper-content-wrapper] {
+  z-index: 99999 !important;
+  pointer-events: none;           /* el wrapper no intercepta clics */
+}
+
+/* El contenido del popover sí recibe los clics */
+[data-radix-popper-content-wrapper] > * {
+  pointer-events: auto;
+}

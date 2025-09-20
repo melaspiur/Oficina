@@ -75,7 +75,7 @@ export function Combobox({
                   key={option.value}
                   // 👇 incluí label + id para que busque por ambos
                   value={`${option.label} ${option.value}`}
-                  onSelect={(currentValue) => {
+                  onSelect={() => {
                     // Tomo el id real desde el option (no desde currentValue)
                     onValueChange(option.value)
                     setOpen(false)
