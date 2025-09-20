@@ -89,12 +89,10 @@ body {
 
 /* Sube el popper wrapper por encima de cualquier overlay */
 [data-radix-popper-content-wrapper] {
-  z-index: 99999 !important; /* mantener encima */
+  z-index: 99999 !important;
 }
 
 /* El contenido del popover sí recibe los clics */
 [data-radix-popper-content-wrapper] > * {
   pointer-events: auto;
 }
-
-    

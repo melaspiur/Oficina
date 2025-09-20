@@ -36,7 +36,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen} modal={modal}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -51,7 +51,6 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent
-        forceMount
         container={typeof document !== "undefined" ? document.body : undefined}
         className="z-[9999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
@@ -92,4 +91,3 @@ export function Combobox({
     </Popover>
   )
 }
-    
