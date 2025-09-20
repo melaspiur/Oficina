@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -68,75 +67,6 @@ export function InformeResumenWhatsappView() {
       }).format(value);
   };
   
-  const generateAndUploadPdf = async (
-      cliente: ClienteWithId,
-      movimientos: MovimientoWithId[],
-      mes: number,
-      ano: number
-  ): Promise<string> => {
-    const startDate = new Date(ano, mes - 1, 1);
-    const mesLabel = format(startDate, 'LLLL', { locale: es });
-    const fileName = `resumen-cuenta/${cliente.cuit}/${ano}-${mesLabel}.pdf`;
-    
-    // 1. Calculate initial balance
-    const movimientosAnteriores = movimientos.filter(m => new Date(m.fecha) < startDate);
-    let saldoInicial = 0;
-    movimientosAnteriores.forEach(m => {
-        saldoInicial += (m.comprobante === 'FC' ? m.importe : -m.importe);
-    });
-
-    // 2. Filter movements for the selected month and build report data
-    const movimientosDelMes = movimientos
-      .filter(m => {
-          const fechaMov = new Date(m.fecha);
-          const endDate = new Date(ano, mes, 0, 23, 59, 59, 999);
-          return fechaMov >= startDate && fechaMov <= endDate;
-      })
-      .sort((a,b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-
-    let saldoAcumulado = saldoInicial;
-    const reportData: any[] = [[
-      '', '', { content: 'SALDO ANTERIOR', styles: { fontStyle: 'bold' } }, '', '', 
-      { content: formatCurrency(saldoInicial), styles: { halign: 'right' } }
-    ]];
-
-    movimientosDelMes.forEach(mov => {
-        const debe = mov.comprobante === 'FC' ? mov.importe : 0;
-        const haber = mov.comprobante === 'RE' ? mov.importe : 0;
-        saldoAcumulado += debe - haber;
-        reportData.push([
-            format(new Date(mov.fecha), 'dd/MM/yyyy'),
-            `${mov.comprobante}-${String(mov.numero).padStart(8, '0')}`,
-            mov.descripcion || '',
-            { content: debe > 0 ? formatCurrency(debe) : '', styles: { halign: 'right' } },
-            { content: haber > 0 ? formatCurrency(haber) : '', styles: { halign: 'right' } },
-            { content: formatCurrency(saldoAcumulado), styles: { halign: 'right' } }
-        ]);
-    });
-    
-    // 3. Generate PDF document in memory
-    const doc = new jsPDF();
-    doc.text(`Cuenta Corriente: ${cliente.codigo} - ${cliente.nombre}`, 14, 16);
-    doc.text(`Período: ${mesLabel} ${ano}`, 14, 22);
-
-    autoTable(doc, {
-      startY: 30,
-      head: [['Fecha', 'Comprobante', 'Descripción', 'Debe', 'Haber', 'Saldo']],
-      body: reportData,
-      foot: [[{ content: 'Saldo Final', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-             { content: formatCurrency(saldoAcumulado), styles: { halign: 'right', fontStyle: 'bold' } }]],
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      footStyles: { fillColor: [236, 240, 241], textColor: 0 },
-      styles: { fontSize: 8 },
-      columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
-    });
-
-    const pdfBlob = doc.output('blob');
-
-    // 4. Upload to Firebase Storage and get URL
-    const downloadURL = await uploadFile(pdfBlob, fileName);
-    return downloadURL;
-  }
 
   const onSubmit = async (data: FormSchema) => {
     setIsProcessing(true);
@@ -154,37 +84,21 @@ export function InformeResumenWhatsappView() {
     }
 
     try {
-      const mes = parseInt(data.mes, 10);
-      const ano = parseInt(data.ano, 10);
-      
-      toast({ title: "Procesando...", description: "Generando y subiendo PDF." });
-      
-      const todosLosMovimientos = await getMovimientosPorCliente(cliente.id);
-
-      if (todosLosMovimientos.filter(m => {
-          const fechaMov = new Date(m.fecha);
-          return fechaMov.getFullYear() === ano && fechaMov.getMonth() === mes - 1;
-        }).length === 0) {
-        toast({ title: "Sin Movimientos", description: `El cliente no tuvo movimientos en el período seleccionado.`, variant: "default" });
-        setIsProcessing(false);
-        return;
-      }
-      
-      const pdfUrl = await generateAndUploadPdf(cliente, todosLosMovimientos, mes, ano);
-
-      const mesLabel = format(new Date(ano, mes-1, 1), 'LLLL', { locale: es });
-      const mensaje = encodeURIComponent(`Hola ${cliente.nombre.split(' ')[0]}, te enviamos tu resumen de cuenta del mes de ${mesLabel} ${ano}. Puedes verlo en el siguiente enlace: ${pdfUrl}`);
-      const whatsappUrl = `https://wa.me/${cliente.celular.replace(/\D/g, '')}?text=${mensaje}`;
+      const mensaje = encodeURIComponent("Hola Como estas");
+      // Clean the phone number to ensure it only contains digits.
+      // Assumes country code is included (e.g., 54 for Argentina).
+      const numeroLimpio = cliente.celular.replace(/\D/g, '');
+      const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${mensaje}`;
 
       window.open(whatsappUrl, '_blank');
 
       toast({
         title: "Listo para Enviar",
-        description: `Se ha abierto WhatsApp para enviar el resumen a ${cliente.nombre}.`,
+        description: `Se ha abierto WhatsApp para enviar el mensaje a ${cliente.nombre}.`,
       });
 
     } catch (error: any) {
-      console.error("Error al generar o enviar el resumen:", error)
+      console.error("Error al generar el resumen:", error)
       toast({
         title: "Error",
         description: error.message || "No se pudo completar el proceso. Intente nuevamente.",
