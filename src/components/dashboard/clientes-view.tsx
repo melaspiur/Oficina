@@ -17,7 +17,7 @@ import { PlusCircle, MoreHorizontal, Edit, Trash2, FileDown, Loader2 } from "luc
 import { Badge } from "@/components/ui/badge"
 import { ClienteDialog } from "./cliente-dialog"
 import type { Cliente, ClienteWithId } from "@/lib/types"
-import { addCliente, getClientes, updateCliente, deleteCliente } from "@/lib/services/clientes"
+import { addCliente, getClientes, updateCliente, deleteCliente, updateClientesBatch } from "@/lib/services/clientes"
 import { deleteAsignacionesByClienteId } from "@/lib/services/asignaciones"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
