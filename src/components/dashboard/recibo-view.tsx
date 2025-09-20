@@ -275,7 +275,6 @@ export function ReciboView() {
                       <FormItem className="flex flex-col">
                         <FormLabel>Cliente *</FormLabel>
                         <Combobox
-                          modal={false}
                           options={clienteOptions}
                           value={field.value}
                           onValueChange={field.onChange}

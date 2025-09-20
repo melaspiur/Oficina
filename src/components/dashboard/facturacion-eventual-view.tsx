@@ -216,7 +216,6 @@ export function FacturacionEventualView() {
                       <FormItem className="flex flex-col">
                         <FormLabel>Cliente *</FormLabel>
                         <Combobox
-                          modal={false}
                           options={clienteOptions}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -283,7 +282,6 @@ export function FacturacionEventualView() {
                       <FormItem className="flex flex-col">
                         <FormLabel>Novedad *</FormLabel>
                         <Combobox
-                          modal={false}
                           options={novedadOptions}
                           value={field.value}
                           onValueChange={field.onChange}

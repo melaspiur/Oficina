@@ -218,7 +218,6 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
                         <FormItem>
                             <FormLabel>Novedad *</FormLabel>
                             <Combobox
-                                modal={false}
                                 options={novedadOptions}
                                 value={field.value}
                                 onValueChange={field.onChange}
