@@ -138,18 +138,31 @@ export function InformeResumenWhatsappView() {
     setIsProcessing(cliente.id);
 
     try {
-        // 1. Get all movements for the client
         const todosLosMovimientos = await getMovimientosPorCliente(cliente.id);
-        
-        // 2. Generate PDF blob
+        const mesLabel = format(new Date(parseInt(ano, 10), parseInt(mes, 10) - 1), 'LLLL', { locale: es });
+        const fileName = `Resumen-${cliente.nombre.replace(/\s+/g, '_')}-${mesLabel}-${ano}.pdf`;
+
+        // 1. Generate PDF blob
         const pdfBlob = generatePdfBlob(cliente, todosLosMovimientos, parseInt(mes, 10), parseInt(ano, 10));
 
-        // 3. Upload PDF to storage
-        const mesLabel = format(new Date(parseInt(ano, 10), parseInt(mes, 10) - 1), 'LLLL', { locale: es });
+        // 2. Trigger local download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(pdfBlob);
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(downloadLink.href);
+
+        toast({
+            title: "PDF Descargado",
+            description: `El resumen para ${cliente.nombre} ha comenzado a descargarse.`,
+        });
+
+        // 3. Upload PDF to storage and open WhatsApp
         const filePath = `resumenes/${cliente.cuit}/${ano}-${mesLabel}.pdf`;
         const downloadURL = await uploadFile(pdfBlob, filePath);
         
-        // 4. Prepare and open WhatsApp link
         const mensaje = encodeURIComponent(`Hola ${cliente.nombre}, te enviamos el resumen de cuenta del mes de ${mesLabel}. Puedes verlo en: ${downloadURL}`);
         const numeroLimpio = cliente.celular!.replace(/\D/g, '');
         const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${mensaje}`;
@@ -307,5 +320,3 @@ export function InformeResumenWhatsappView() {
     </div>
   )
 }
-
-    
