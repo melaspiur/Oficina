@@ -1,5 +1,5 @@
 import { getClientDb } from "@/lib/firebase";
-import type { Movimiento, MovimientoWithId, ClienteWithId } from "@/lib/types";
+import type { Movimiento, MovimientoWithId, Cliente, ClienteWithId } from "@/lib/types";
 import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc } from "firebase/firestore";
 
 
@@ -326,8 +326,9 @@ export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWit
 
     const clientesMap = new Map<string, ClienteWithId>();
     clientesSnap.forEach(doc => {
-        if (doc.data().celular) {
-            clientesMap.set(doc.id, { ...doc.data() as Cliente, id: doc.id });
+        const clienteData = doc.data() as Cliente;
+        if (clienteData.celular && clienteData.celular.trim() !== '') {
+            clientesMap.set(doc.id, { ...clienteData, id: doc.id });
         }
     });
 
@@ -336,8 +337,10 @@ export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWit
     movimientosSnap.forEach(doc => {
         const mov = doc.data() as Movimiento;
         const saldoActual = saldosPorCliente.get(mov.clienteId) || 0;
+        const importeNeto = mov.importe - mov.aplicacion;
+        
         if (mov.comprobante === 'FC') {
-            saldosPorCliente.set(mov.clienteId, saldoActual + mov.importe - mov.aplicacion);
+            saldosPorCliente.set(mov.clienteId, saldoActual + importeNeto);
         }
     });
     
@@ -350,3 +353,5 @@ export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWit
 
     return clientesConSaldo.sort((a,b) => a.codigo - b.codigo);
 }
+
+    
