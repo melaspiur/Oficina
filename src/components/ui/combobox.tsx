@@ -21,6 +21,11 @@ type ComboboxProps = {
   modal?: boolean;
 };
 
+
+// helpers para normalizar (quita acentos)
+const norm = (s: string) =>
+  s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
+
 export function Combobox({
   options,
   value,
@@ -49,7 +54,7 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent
-        container={typeof document !== 'undefined' ? document.body : undefined}
+        container={typeof document !== "undefined" ? document.body : undefined}
         className="z-[9999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
@@ -57,7 +62,10 @@ export function Combobox({
         sideOffset={4}
         collisionPadding={8}
       >
-        <Command>
+        <Command
+          // 🔎 filtro acentos-insensible (aplica sobre CommandItem.value)
+          filter={(val, search) => (norm(val).includes(norm(search)) ? 1 : 0)}
+        >
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>
@@ -65,9 +73,11 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  // 👇 incluí label + id para que busque por ambos
+                  value={`${option.label} ${option.value}`}
                   onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? "" : currentValue)
+                    // Tomo el id real desde el option (no desde currentValue)
+                    onValueChange(option.value)
                     setOpen(false)
                   }}
                 >
