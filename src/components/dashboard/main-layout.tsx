@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -51,6 +50,7 @@ import {
   Loader2,
   Undo2,
   List,
+  Send,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -73,6 +73,7 @@ import { InformeResumenesPdfView } from './informe-resumenes-pdf-view';
 import { ChangePasswordDialog } from './change-password-dialog';
 import { DesaplicarReciboView } from './desaplicar-recibo-view';
 import { ModificarFacturaView } from './modificar-factura-view';
+import { InformeResumenWhatsappView } from './informe-resumen-whatsapp-view';
 import type { FirebaseConfig } from '@/lib/empresas';
 
 export function MainLayout() {
@@ -201,6 +202,8 @@ export function MainLayout() {
         return <InformeCuentaCorrienteView />;
       case 'informes-resumenes-pdf':
         return <InformeResumenesPdfView />;
+      case 'informes-resumen-enviado':
+        return <InformeResumenWhatsappView />;
       default:
         return <ClientesView />;
     }
@@ -228,7 +231,8 @@ export function MainLayout() {
         if (activeView === 'informes-cobranzas-mensual') return "Informe de Cobranzas Mensual";
         if (activeView === 'informes-cobranzas-cliente') return "Informe de Cobranzas por Cliente";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
-        if (activeView === 'informes-resumenes-pdf') return "Resúmenes PDF";
+        if (activeView === 'informes-resumenes-pdf') return "Resúmenes PDF (Descarga)";
+        if (activeView === 'informes-resumen-enviado') return "Resumen PDF (Enviar)";
      }
      if (activeView.startsWith('cobranzas-')) {
         if (activeView === 'cobranzas-generar-recibo') return "Generar Recibo";
@@ -484,7 +488,15 @@ export function MainLayout() {
                         onClick={() => setActiveView('informes-resumenes-pdf')} 
                         isActive={activeView === 'informes-resumenes-pdf'}>
                         <FileArchive />
-                        <span>Resúmenes PDF</span>
+                        <span>Resúmenes PDF (Descarga)</span>
+                        </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                     <SidebarMenuSubItem>
+                        <SidebarMenuSubButton 
+                        onClick={() => setActiveView('informes-resumen-enviado')} 
+                        isActive={activeView === 'informes-resumen-enviado'}>
+                        <Send />
+                        <span>Resumen PDF (Enviar)</span>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                 </SidebarMenuSub>

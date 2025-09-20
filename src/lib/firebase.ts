@@ -2,11 +2,13 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 import type { FirebaseConfig } from "./empresas";
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
 /**
  * Initializes a Firebase app instance for a specific company configuration.
@@ -15,7 +17,7 @@ let db: Firestore | null = null;
  * @param {FirebaseConfig} config - The Firebase configuration object for the company.
  * @returns {{app: FirebaseApp, auth: Auth, db: Firestore}} - The initialized Firebase services.
  */
-export function initializeFirebaseClient(config: FirebaseConfig): { app: FirebaseApp, auth: Auth, db: Firestore } {
+export function initializeFirebaseClient(config: FirebaseConfig): { app: FirebaseApp, auth: Auth, db: Firestore, storage: FirebaseStorage } {
   // Check if an app with this name already exists to avoid re-initialization
   // We use the projectId as a unique name for the app instance.
   const appName = config.projectId;
@@ -29,8 +31,9 @@ export function initializeFirebaseClient(config: FirebaseConfig): { app: Firebas
   
   auth = getAuth(app);
   db = getFirestore(app);
+  storage = getStorage(app);
 
-  return { app, auth, db };
+  return { app, auth, db, storage };
 }
 
 // These functions allow other parts of the app to get the current Firebase instance.
@@ -38,3 +41,4 @@ export function initializeFirebaseClient(config: FirebaseConfig): { app: Firebas
 export const getClientApp = () => app;
 export const getClientAuth = () => auth;
 export const getClientDb = () => db;
+export const getClientStorage = () => storage;
