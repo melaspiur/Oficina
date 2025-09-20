@@ -144,7 +144,7 @@ export function InformeResumenesPdfView() {
       }
     });
 
-    const fileName = `${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-${mesLabel}.pdf`;
+    const fileName = `${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-${mesLabel}-${ano}.pdf`;
     doc.save(fileName);
   }
 
