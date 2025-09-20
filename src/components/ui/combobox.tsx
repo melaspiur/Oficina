@@ -17,7 +17,6 @@ type ComboboxProps = {
   searchPlaceholder?: string;
   notFoundMessage?: string;
   disabled?: boolean;
-  modal?: boolean;
 }
 
 const norm = (s: string) =>
@@ -31,12 +30,11 @@ export function Combobox({
   searchPlaceholder = "Search...",
   notFoundMessage = "No option found.",
   disabled = false,
-  modal = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={modal}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -51,17 +49,17 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent
+        modal={false}
+        forceMount
         container={typeof document !== "undefined" ? document.body : undefined}
-        className="z-[9999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
+        className="z-[99999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
         align="start"
         sideOffset={4}
         collisionPadding={8}
       >
-        <Command
-          filter={(val, search) => (norm(val).includes(norm(search)) ? 1 : 0)}
-        >
+        <Command filter={(val, search) => (norm(val).includes(norm(search)) ? 1 : 0)}>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{notFoundMessage}</CommandEmpty>

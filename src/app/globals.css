@@ -93,6 +93,6 @@ body {
 }
 
 /* El contenido del popover sí recibe los clics */
-[data-radix-popper-content-wrapper] > * {
-  pointer-events: auto;
+[data-radix-popper-content-wrapper] * {
+  pointer-events: auto !important;
 }
