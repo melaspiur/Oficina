@@ -49,7 +49,6 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent
-        modal={false}
         forceMount
         container={typeof document !== "undefined" ? document.body : undefined}
         className="z-[99999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
