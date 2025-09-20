@@ -138,8 +138,8 @@ export function InformeResumenWhatsappView() {
         <CardHeader>
           <CardTitle>Envío de Resúmenes por WhatsApp desde Archivos</CardTitle>
           <CardDescription>
-            Seleccione el mes y año de los resúmenes, luego suba los archivos PDF para enviarlos.
-            El nombre de cada archivo debe comenzar con el código del cliente (ej: "101-NombreCliente...pdf").
+            Seleccione el período de los resúmenes y luego suba los archivos PDF para enviarlos.
+            Puede seleccionar múltiples archivos a la vez (ej: usando Ctrl+A en la carpeta). El nombre de cada archivo debe comenzar con el código del cliente (ej: "101-Nombre...pdf").
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -256,3 +256,5 @@ export function InformeResumenWhatsappView() {
     </div>
   )
 }
+
+    
