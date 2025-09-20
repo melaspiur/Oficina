@@ -1,3 +1,5 @@
+"use client"
+
 import { getClientApp } from "@/lib/firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
