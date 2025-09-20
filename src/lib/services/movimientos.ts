@@ -1,5 +1,5 @@
 import { getClientDb } from "@/lib/firebase";
-import type { Movimiento, MovimientoWithId } from "@/lib/types";
+import type { Movimiento, MovimientoWithId, ClienteWithId } from "@/lib/types";
 import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc } from "firebase/firestore";
 
 
@@ -308,4 +308,45 @@ export async function getClientesConMovimientos(year: number, month: number): Pr
   });
 
   return Array.from(clientIds);
+}
+
+/**
+ * Gets a list of clients who have an outstanding balance and a registered mobile phone.
+ * @returns A promise that resolves to an array of ClienteWithId.
+ */
+export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWithId[]> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+    
+    const movimientosCollection = collection(db, "movimientos");
+    const clientesCollection = collection(db, "clientes");
+
+    const movimientosSnap = await getDocs(movimientosCollection);
+    const clientesSnap = await getDocs(clientesCollection);
+
+    const clientesMap = new Map<string, ClienteWithId>();
+    clientesSnap.forEach(doc => {
+        if (doc.data().celular) {
+            clientesMap.set(doc.id, { ...doc.data() as Cliente, id: doc.id });
+        }
+    });
+
+    const saldosPorCliente = new Map<string, number>();
+
+    movimientosSnap.forEach(doc => {
+        const mov = doc.data() as Movimiento;
+        const saldoActual = saldosPorCliente.get(mov.clienteId) || 0;
+        if (mov.comprobante === 'FC') {
+            saldosPorCliente.set(mov.clienteId, saldoActual + mov.importe - mov.aplicacion);
+        }
+    });
+    
+    const clientesConSaldo = [];
+    for (const [clienteId, saldo] of saldosPorCliente.entries()) {
+        if (saldo > 0.01 && clientesMap.has(clienteId)) {
+            clientesConSaldo.push(clientesMap.get(clienteId)!);
+        }
+    }
+
+    return clientesConSaldo.sort((a,b) => a.codigo - b.codigo);
 }

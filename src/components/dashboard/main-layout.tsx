@@ -202,7 +202,7 @@ export function MainLayout() {
         return <InformeCuentaCorrienteView />;
       case 'informes-resumenes-pdf':
         return <InformeResumenesPdfView />;
-      case 'informes-resumen-enviado':
+      case 'informes-resumen-whatsapp':
         return <InformeResumenWhatsappView />;
       default:
         return <ClientesView />;
@@ -232,7 +232,7 @@ export function MainLayout() {
         if (activeView === 'informes-cobranzas-cliente') return "Informe de Cobranzas por Cliente";
         if (activeView === 'informes-cuenta-corriente') return "Cuenta Corriente";
         if (activeView === 'informes-resumenes-pdf') return "Resúmenes PDF (Descarga)";
-        if (activeView === 'informes-resumen-enviado') return "Resumen PDF (Enviar)";
+        if (activeView === 'informes-resumen-whatsapp') return "Resumen por WhatsApp";
      }
      if (activeView.startsWith('cobranzas-')) {
         if (activeView === 'cobranzas-generar-recibo') return "Generar Recibo";
@@ -493,10 +493,10 @@ export function MainLayout() {
                     </SidebarMenuSubItem>
                      <SidebarMenuSubItem>
                         <SidebarMenuSubButton 
-                        onClick={() => setActiveView('informes-resumen-enviado')} 
-                        isActive={activeView === 'informes-resumen-enviado'}>
+                        onClick={() => setActiveView('informes-resumen-whatsapp')} 
+                        isActive={activeView === 'informes-resumen-whatsapp'}>
                         <Send />
-                        <span>Resumen PDF (Enviar)</span>
+                        <span>Resumen por WhatsApp</span>
                         </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                 </SidebarMenuSub>
