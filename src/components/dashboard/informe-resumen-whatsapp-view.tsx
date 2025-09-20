@@ -9,7 +9,6 @@ import { es } from "date-fns/locale"
 import { Loader2 } from "lucide-react"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -67,6 +66,63 @@ export function InformeResumenWhatsappView() {
       }).format(value);
   };
   
+  const generatePdfBlob = (
+      cliente: ClienteWithId,
+      movimientos: MovimientoWithId[],
+      mes: number,
+      ano: number
+  ): Blob => {
+    const startDate = new Date(ano, mes - 1, 1);
+    const endDate = new Date(ano, mes, 0, 23, 59, 59, 999);
+    const mesLabel = format(startDate, 'LLLL', { locale: es });
+
+    const movimientosAnteriores = movimientos.filter(m => new Date(m.fecha) < startDate);
+    let saldoInicial = 0;
+    movimientosAnteriores.forEach(m => {
+        saldoInicial += (m.comprobante === 'FC' ? m.importe : -m.importe);
+    });
+
+    const movimientosDelMes = movimientos
+      .filter(m => new Date(m.fecha) >= startDate && new Date(m.fecha) <= endDate)
+      .sort((a,b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+    let saldoAcumulado = saldoInicial;
+    const reportData: any[] = [[
+      '', '', { content: 'SALDO ANTERIOR', styles: { fontStyle: 'bold' } }, '', '', 
+      { content: formatCurrency(saldoInicial), styles: { halign: 'right' } }
+    ]];
+
+    movimientosDelMes.forEach(mov => {
+        const debe = mov.comprobante === 'FC' ? mov.importe : 0;
+        const haber = mov.comprobante === 'RE' ? mov.importe : 0;
+        saldoAcumulado += debe - haber;
+        reportData.push([
+            format(new Date(mov.fecha), 'dd/MM/yyyy'),
+            `${mov.comprobante}-${String(mov.numero).padStart(8, '0')}`,
+            mov.descripcion || '',
+            { content: debe > 0 ? formatCurrency(debe) : '', styles: { halign: 'right' } },
+            { content: haber > 0 ? formatCurrency(haber) : '', styles: { halign: 'right' } },
+            { content: formatCurrency(saldoAcumulado), styles: { halign: 'right' } }
+        ]);
+    });
+    
+    const doc = new jsPDF();
+    doc.text(`Cuenta Corriente: ${cliente.codigo} - ${cliente.nombre}`, 14, 16);
+    doc.text(`Período: ${mesLabel} ${ano}`, 14, 22);
+
+    autoTable(doc, {
+      startY: 30,
+      head: [['Fecha', 'Comprobante', 'Descripción', 'Debe', 'Haber', 'Saldo']],
+      body: reportData,
+      foot: [[{ content: 'Saldo Final', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: formatCurrency(saldoAcumulado), styles: { halign: 'right', fontStyle: 'bold' } }]],
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      footStyles: { fillColor: [236, 240, 241], textColor: 0 },
+      styles: { fontSize: 8 },
+      columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
+    });
+
+    return doc.output('blob');
+  }
 
   const onSubmit = async (data: FormSchema) => {
     setIsProcessing(true);
@@ -84,9 +140,21 @@ export function InformeResumenWhatsappView() {
     }
 
     try {
-      const mensaje = encodeURIComponent("Hola Como estas");
-      // Clean the phone number to ensure it only contains digits.
-      // Assumes country code is included (e.g., 54 for Argentina).
+      toast({ title: "Procesando...", description: "Generando PDF del resumen, por favor espere." });
+      
+      const mes = parseInt(data.mes, 10);
+      const ano = parseInt(data.ano, 10);
+      
+      const todosLosMovimientos = await getMovimientosPorCliente(data.clienteId);
+      const pdfBlob = generatePdfBlob(cliente, todosLosMovimientos, mes, ano);
+
+      const mesLabel = format(new Date(ano, mes - 1), 'LLLL', { locale: es });
+      const filePath = `resumenes/${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-${mesLabel}-${ano}.pdf`;
+      
+      toast({ title: "Subiendo PDF...", description: "Cargando el archivo para generar el enlace." });
+      const downloadURL = await uploadFile(pdfBlob, filePath);
+
+      const mensaje = encodeURIComponent(`Hola ${cliente.nombre}, te enviamos tu resumen de cuenta del mes de ${mesLabel} ${ano}. Puedes verlo en el siguiente enlace: ${downloadURL}`);
       const numeroLimpio = cliente.celular.replace(/\D/g, '');
       const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${mensaje}`;
 
@@ -94,7 +162,7 @@ export function InformeResumenWhatsappView() {
 
       toast({
         title: "Listo para Enviar",
-        description: `Se ha abierto WhatsApp para enviar el mensaje a ${cliente.nombre}.`,
+        description: `Se ha abierto WhatsApp para enviar el resumen a ${cliente.nombre}.`,
       });
 
     } catch (error: any) {
