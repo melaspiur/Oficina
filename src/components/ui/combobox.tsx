@@ -1,4 +1,5 @@
 "use client"
+
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -48,11 +49,10 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent
-        // z-index MUY alto para ganar al overlay del Dialog/Sheet
-        className="z-[9999] w-[var(--radix-popover-trigger-width)] p-0"
-        // evita que Radix mueva el foco y dispare estilos del overlay
+        container={typeof document !== 'undefined' ? document.body : undefined}
+        className="z-[9999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
-        // opcionales: mejorar ubicación
+        onCloseAutoFocus={(e) => e.preventDefault()}
         align="start"
         sideOffset={4}
         collisionPadding={8}
@@ -67,7 +67,7 @@ export function Combobox({
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? (value ?? "") : currentValue)
+                    onValueChange(currentValue === value ? "" : currentValue)
                     setOpen(false)
                   }}
                 >

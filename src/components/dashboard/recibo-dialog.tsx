@@ -161,9 +161,13 @@ export function ReciboDialog({ isOpen, onOpenChange, onSave, recibo, cliente }: 
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent 
-                                    className="z-[9999] w-auto p-0" 
+                                    container={typeof document !== 'undefined' ? document.body : undefined}
+                                    className="z-[9999] pointer-events-auto w-auto p-0"
                                     align="start"
+                                    sideOffset={4}
+                                    collisionPadding={8}
                                     onOpenAutoFocus={(e) => e.preventDefault()}
+                                    onCloseAutoFocus={(e) => e.preventDefault()}
                                 >
                                     <Calendar
                                         mode="single"
