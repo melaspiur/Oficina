@@ -17,12 +17,9 @@ type ComboboxProps = {
   searchPlaceholder?: string;
   notFoundMessage?: string;
   disabled?: boolean;
-  /** Si lo usás dentro de Dialog/Sheet, pasá modal={false} */
   modal?: boolean;
-};
+}
 
-
-// helpers para normalizar (quita acentos)
 const norm = (s: string) =>
   s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()
 
@@ -39,7 +36,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={modal}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -54,6 +51,7 @@ export function Combobox({
       </PopoverTrigger>
 
       <PopoverContent
+        forceMount
         container={typeof document !== "undefined" ? document.body : undefined}
         className="z-[9999] pointer-events-auto w-[var(--radix-popover-trigger-width)] p-0"
         onOpenAutoFocus={(e) => e.preventDefault()}
@@ -63,7 +61,6 @@ export function Combobox({
         collisionPadding={8}
       >
         <Command
-          // 🔎 filtro acentos-insensible (aplica sobre CommandItem.value)
           filter={(val, search) => (norm(val).includes(norm(search)) ? 1 : 0)}
         >
           <CommandInput placeholder={searchPlaceholder} />
@@ -73,10 +70,8 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  // 👇 incluí label + id para que busque por ambos
                   value={`${option.label} ${option.value}`}
                   onSelect={() => {
-                    // Tomo el id real desde el option (no desde currentValue)
                     onValueChange(option.value)
                     setOpen(false)
                   }}
@@ -97,3 +92,4 @@ export function Combobox({
     </Popover>
   )
 }
+    
