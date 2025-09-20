@@ -6,20 +6,19 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
-import { Loader2, Search, Send } from "lucide-react"
-import jsPDF from "jspdf"
-import autoTable from "jspdf-autotable"
+import { Loader2, Send, Upload } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
 
 import { useToast } from "@/hooks/use-toast"
-import { getMovimientosPorCliente, getClientesConSaldoPendienteYCelular } from "@/lib/services/movimientos"
+import { getClienteByCodigo } from "@/lib/services/clientes"
 import { uploadFile } from "@/lib/services/storage"
-import type { ClienteWithId, MovimientoWithId } from "@/lib/types"
+import type { ClienteWithId } from "@/lib/types"
 
 const currentYear = new Date().getFullYear()
 
@@ -30,12 +29,17 @@ const formSchema = z.object({
 
 type FormSchema = z.infer<typeof formSchema>
 
+type FileToSend = {
+    file: File;
+    status: 'pending' | 'processing' | 'sent' | 'error';
+    errorMessage?: string;
+    cliente?: ClienteWithId;
+}
+
 export function InformeResumenWhatsappView() {
-  const [isSearching, setIsSearching] = React.useState(false)
-  const [isProcessing, setIsProcessing] = React.useState<string | null>(null); // Store client ID being processed
-  const [clientesParaEnviar, setClientesParaEnviar] = React.useState<ClienteWithId[]>([])
-  const [hasSearched, setHasSearched] = React.useState(false);
+  const [filesToSend, setFilesToSend] = React.useState<FileToSend[]>([]);
   const { toast } = useToast()
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -45,123 +49,58 @@ export function InformeResumenWhatsappView() {
     },
   })
 
-  const formatCurrency = (value: number) => {
-      return new Intl.NumberFormat('es-AR', {
-          style: 'currency',
-          currency: 'ARS',
-      }).format(value);
-  };
-  
-  const generatePdfBlob = (
-      cliente: ClienteWithId,
-      movimientos: MovimientoWithId[],
-      mes: number,
-      ano: number
-  ): Blob => {
-    const startDate = new Date(ano, mes - 1, 1);
-    const endDate = new Date(ano, mes, 0, 23, 59, 59, 999); 
-    const mesLabel = format(startDate, 'LLLL', { locale: es });
-
-    const movimientosAnteriores = movimientos.filter(m => new Date(m.fecha) < startDate);
-    let saldoInicial = 0;
-    movimientosAnteriores.forEach(m => {
-        saldoInicial += (m.comprobante === 'FC' ? m.importe : -m.importe);
-    });
-
-    const movimientosDelMes = movimientos
-      .filter(m => {
-          const fechaMov = new Date(m.fecha);
-          return fechaMov >= startDate && fechaMov <= endDate;
-      })
-      .sort((a,b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-
-    let saldoAcumulado = saldoInicial;
-    const reportData: any[] = [];
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     
-    reportData.push([
-      '', '', { content: 'SALDO ANTERIOR', styles: { fontStyle: 'bold' } }, '', '', 
-      { content: formatCurrency(saldoInicial), styles: { halign: 'right' } }
-    ]);
+    const newFiles: FileToSend[] = Array.from(files).map(file => ({
+        file,
+        status: 'pending'
+    }));
 
-    movimientosDelMes.forEach(mov => {
-        const debe = mov.comprobante === 'FC' ? mov.importe : 0;
-        const haber = mov.comprobante === 'RE' ? mov.importe : 0;
-        saldoAcumulado += debe - haber;
-        reportData.push([
-            format(new Date(mov.fecha), 'dd/MM/yyyy'),
-            `${mov.comprobante}-${String(mov.numero).padStart(8, '0')}`,
-            mov.descripcion || '',
-            { content: debe > 0 ? formatCurrency(debe) : '', styles: { halign: 'right' } },
-            { content: haber > 0 ? formatCurrency(haber) : '', styles: { halign: 'right' } },
-            { content: formatCurrency(saldoAcumulado), styles: { halign: 'right' } }
-        ]);
-    });
-    
-    const doc = new jsPDF();
-    doc.text(`Cuenta Corriente: ${cliente.codigo} - ${cliente.nombre}`, 14, 16);
-    doc.text(`Período: ${mesLabel} ${ano}`, 14, 22);
+    // Pre-process files to find clients
+    for (const fts of newFiles) {
+        try {
+            const fileName = fts.file.name;
+            const codigoStr = fileName.split('-')[0];
+            const codigo = parseInt(codigoStr, 10);
+            
+            if (isNaN(codigo)) {
+                throw new Error("El nombre del archivo no comienza con un código de cliente válido.");
+            }
 
-    autoTable(doc, {
-      startY: 30,
-      head: [['Fecha', 'Comprobante', 'Descripción', 'Debe', 'Haber', 'Saldo']],
-      body: reportData,
-      foot: [[{ content: 'Saldo Final', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } }, { content: formatCurrency(saldoAcumulado), styles: { halign: 'right', fontStyle: 'bold' } }]],
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      footStyles: { fillColor: [236, 240, 241], textColor: 0 },
-      styles: { fontSize: 8 },
-      columnStyles: { 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } }
-    });
+            const cliente = await getClienteByCodigo(codigo);
+            if (!cliente) {
+                throw new Error(`No se encontró un cliente con el código ${codigo}.`);
+            }
+             if (!cliente.celular) {
+                throw new Error(`El cliente ${cliente.nombre} no tiene un número de celular.`);
+            }
 
-    return doc.output('blob');
-  }
-
-  const handleSearch = async (data: FormSchema) => {
-    setIsSearching(true);
-    setHasSearched(true);
-    setClientesParaEnviar([]);
-    try {
-      const clientes = await getClientesConSaldoPendienteYCelular();
-       if (clientes.length === 0) {
-        toast({ title: "Sin Clientes", description: "No se encontraron clientes con saldo pendiente y número de celular cargado." });
-      }
-      setClientesParaEnviar(clientes);
-    } catch (error) {
-      console.error("Error buscando clientes:", error);
-      toast({ title: "Error", description: "No se pudieron buscar los clientes.", variant: "destructive" });
-    } finally {
-      setIsSearching(false);
+            fts.cliente = cliente;
+        } catch (error: any) {
+            fts.status = 'error';
+            fts.errorMessage = error.message;
+        }
     }
+    
+    setFilesToSend(newFiles);
   }
 
-  const handleSend = async (cliente: ClienteWithId) => {
+  const handleSend = async (fileWrapper: FileToSend) => {
+    if (!fileWrapper.cliente || fileWrapper.status === 'processing') return;
+
+     setFilesToSend(prev => prev.map(f => 
+        f.file.name === fileWrapper.file.name ? { ...f, status: 'processing' } : f
+    ));
+    
     const { mes, ano } = form.getValues();
-    setIsProcessing(cliente.id);
+    const cliente = fileWrapper.cliente;
 
     try {
-        const todosLosMovimientos = await getMovimientosPorCliente(cliente.id);
         const mesLabel = format(new Date(parseInt(ano, 10), parseInt(mes, 10) - 1), 'LLLL', { locale: es });
-        const fileName = `Resumen-${cliente.nombre.replace(/\s+/g, '_')}-${mesLabel}-${ano}.pdf`;
-
-        // 1. Generate PDF blob
-        const pdfBlob = generatePdfBlob(cliente, todosLosMovimientos, parseInt(mes, 10), parseInt(ano, 10));
-
-        // 2. Trigger local download
-        const downloadLink = document.createElement('a');
-        downloadLink.href = URL.createObjectURL(pdfBlob);
-        downloadLink.download = fileName;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(downloadLink.href);
-
-        toast({
-            title: "PDF Descargado",
-            description: `El resumen para ${cliente.nombre} ha comenzado a descargarse.`,
-        });
-
-        // 3. Upload PDF to storage and open WhatsApp
         const filePath = `resumenes/${cliente.cuit}/${ano}-${mesLabel}.pdf`;
-        const downloadURL = await uploadFile(pdfBlob, filePath);
+        const downloadURL = await uploadFile(fileWrapper.file, filePath);
         
         const mensaje = encodeURIComponent(`Hola ${cliente.nombre}, te enviamos el resumen de cuenta del mes de ${mesLabel}. Puedes verlo en: ${downloadURL}`);
         const numeroLimpio = cliente.celular!.replace(/\D/g, '');
@@ -173,11 +112,16 @@ export function InformeResumenWhatsappView() {
             description: `Se ha abierto WhatsApp para enviar el resumen a ${cliente.nombre}.`,
         });
 
+        setFilesToSend(prev => prev.map(f => 
+            f.file.name === fileWrapper.file.name ? { ...f, status: 'sent' } : f
+        ));
+
     } catch (error) {
         console.error("Error al generar o enviar resumen:", error);
         toast({ title: "Error", description: "No se pudo completar el proceso de envío.", variant: "destructive" });
-    } finally {
-        setIsProcessing(null);
+        setFilesToSend(prev => prev.map(f => 
+            f.file.name === fileWrapper.file.name ? { ...f, status: 'error', errorMessage: "Error al subir o enviar." } : f
+        ));
     }
   };
 
@@ -192,14 +136,15 @@ export function InformeResumenWhatsappView() {
     <div className="p-6 space-y-6">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle>Envío de Resúmenes Mensuales por WhatsApp</CardTitle>
+          <CardTitle>Envío de Resúmenes por WhatsApp desde Archivos</CardTitle>
           <CardDescription>
-            Busque los clientes con saldo pendiente para un período y envíe sus resúmenes de cuenta por WhatsApp.
+            Seleccione el mes y año de los resúmenes, luego suba los archivos PDF para enviarlos.
+            El nombre de cada archivo debe comenzar con el código del cliente (ej: "101-NombreCliente...pdf").
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSearch)} className="flex flex-col sm:flex-row gap-4 items-end">
+            <form className="flex flex-col sm:flex-row gap-4 items-end">
                 <FormField
                     control={form.control}
                     name="mes"
@@ -244,24 +189,29 @@ export function InformeResumenWhatsappView() {
                     </FormItem>
                     )}
                 />
-                <Button type="submit" className="w-full sm:w-auto" disabled={isSearching}>
-                    {isSearching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                    Buscar Clientes
+                 <Input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    multiple 
+                    accept="application/pdf"
+                    className="hidden" 
+                    onChange={handleFileSelect} 
+                />
+                <Button type="button" className="w-full sm:w-auto" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Seleccionar Archivos
                 </Button>
             </form>
           </Form>
         </CardContent>
       </Card>
       
-      {hasSearched && (
+      {filesToSend.length > 0 && (
         <Card>
             <CardHeader>
-                <CardTitle>Clientes a Enviar</CardTitle>
+                <CardTitle>Archivos para Enviar</CardTitle>
                 <CardDescription>
-                    {isSearching 
-                        ? "Buscando clientes..." 
-                        : `Se encontraron ${clientesParaEnviar.length} clientes con saldo pendiente y celular.`
-                    }
+                    Se encontraron {filesToSend.length} archivos. Haga clic en "Enviar" para cada uno.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -269,47 +219,33 @@ export function InformeResumenWhatsappView() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Código</TableHead>
-                                <TableHead>Nombre</TableHead>
+                                <TableHead>Archivo</TableHead>
+                                <TableHead>Cliente Detectado</TableHead>
                                 <TableHead>Celular</TableHead>
                                 <TableHead className="text-right">Acción</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isSearching ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                            {filesToSend.map((fts, index) => (
+                                <TableRow key={index} className={fts.status === 'error' ? 'bg-destructive/10' : ''}>
+                                    <TableCell className="font-medium max-w-xs truncate">
+                                        <p>{fts.file.name}</p>
+                                        {fts.status === 'error' && <p className="text-destructive text-xs">{fts.errorMessage}</p>}
+                                    </TableCell>
+                                    <TableCell>{fts.cliente?.nombre || '---'}</TableCell>
+                                    <TableCell className="font-mono">{fts.cliente?.celular || '---'}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button 
+                                            size="sm"
+                                            onClick={() => handleSend(fts)}
+                                            disabled={fts.status !== 'pending'}
+                                        >
+                                            {fts.status === 'processing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            {fts.status === 'sent' ? 'Enviado' : 'Enviar'}
+                                        </Button>
                                     </TableCell>
                                 </TableRow>
-                            ) : clientesParaEnviar.length > 0 ? (
-                                clientesParaEnviar.map(cliente => (
-                                    <TableRow key={cliente.id}>
-                                        <TableCell>{cliente.codigo}</TableCell>
-                                        <TableCell className="font-medium">{cliente.nombre}</TableCell>
-                                        <TableCell className="font-mono">{cliente.celular}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button 
-                                                size="sm"
-                                                onClick={() => handleSend(cliente)}
-                                                disabled={isProcessing === cliente.id}
-                                            >
-                                                {isProcessing === cliente.id ? 
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
-                                                    <Send className="mr-2 h-4 w-4" />
-                                                }
-                                                Enviar
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                               <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        No se encontraron clientes para los criterios de búsqueda.
-                                    </TableCell>
-                                </TableRow> 
-                            )}
+                            ))}
                         </TableBody>
                     </Table>
                 </div>
