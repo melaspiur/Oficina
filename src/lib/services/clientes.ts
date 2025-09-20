@@ -25,24 +25,6 @@ export async function updateCliente(id: string, cliente: Partial<Cliente>) {
     await updateDoc(clienteDoc, cliente);
 }
 
-export async function updateClientesBatch(updates: { id: string; changes: Partial<Cliente> }[]) {
-    const db = getClientDb();
-    if (!db) throw new Error("Firestore is not initialized");
-
-    if (!updates || updates.length === 0) {
-        return;
-    }
-    
-    const batch = writeBatch(db);
-
-    updates.forEach(update => {
-        const docRef = doc(db, "clientes", update.id);
-        batch.update(docRef, update.changes);
-    });
-
-    await batch.commit();
-}
-
 export async function deleteCliente(id: string) {
     const db = getClientDb();
     if (!db) throw new Error("Firestore is not initialized");
