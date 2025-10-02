@@ -165,7 +165,7 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
                                     onChange={handleDateChange}
                                 />
                                 </FormControl>
-                                <Popover modal={false}>
+                                <Popover modal={true}>
                                 <PopoverTrigger asChild>
                                     <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground">
                                     <CalendarIcon className="h-4 w-4" />
@@ -173,13 +173,10 @@ export function FacturaDialog({ isOpen, onOpenChange, onSave, factura, cliente, 
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent 
-                                    container={typeof document !== 'undefined' ? document.body : undefined}
-                                    className="z-[9999] pointer-events-auto w-auto p-0"
+                                    className="w-auto p-0"
                                     align="start"
                                     sideOffset={4}
                                     collisionPadding={8}
-                                    onOpenAutoFocus={(e) => e.preventDefault()}
-                                    onCloseAutoFocus={(e) => e.preventDefault()}
                                 >
                                     <Calendar
                                         mode="single"
