@@ -10,30 +10,50 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getClientes, type ClienteWithId } from '@/lib/services/clientes';
-import { getNovedades, type NovedadWithId } from '@/lib/services/novedades';
-import { getAsignaciones, deleteAsignacionesEventuales, type AsignacionWithId } from '@/lib/services/asignaciones';
-import { getConfiguracionComprobantes } from '@/lib/services/configuracion';
-import { initializeFirebaseClient } from '@/lib/firebase';
+import type { ClienteWithId } from '@/lib/services/clientes';
+import type { NovedadWithId } from '@/lib/services/novedades';
+import type { AsignacionWithId } from '@/lib/services/asignaciones';
 import type { ClienteFacturado } from '@/lib/types';
-import type { FirebaseConfig } from '@/lib/empresas';
+
+
+// Esquema de datos que el flujo recibe
+const ClienteSchema = z.object({
+  id: z.string(),
+  codigo: z.number(),
+  nombre: z.string(),
+  cuit: z.string(),
+  tipo: z.enum(["inscripto", "monotributo"]),
+  categoria: z.number(),
+});
+const NovedadSchema = z.object({
+  id: z.string(),
+  codigo: z.number(),
+  nombre: z.string(),
+  importe: z.number(),
+  meses: z.record(z.boolean()),
+});
+const AsignacionSchema = z.object({
+  id: z.string(),
+  clienteId: z.string(),
+  novedadId: z.string(),
+  cantidad: z.number(),
+  eventual: z.boolean(),
+});
+const ConfigComprobantesSchema = z.object({
+  ultimoFactura: z.number(),
+  ultimoRecibo: z.number(),
+  ultimoMesEventual: z.string().optional(),
+})
 
 
 // Esquema de entrada
-const FirebaseConfigSchema = z.object({
-  apiKey: z.string(),
-  authDomain: z.string(),
-  projectId: z.string(),
-  storageBucket: z.string(),
-  messagingSenderId: z.string(),
-  appId: z.string(),
-  measurementId: z.string().optional(),
-});
-
 const GenerarFacturacionInputSchema = z.object({
   mes: z.string().describe('El mes para el cual generar la facturación (e.g., "enero").'),
   fechaFacturacion: z.string().describe('La fecha de la factura en formato ISO.'),
-  firebaseConfig: FirebaseConfigSchema.describe('La configuración de Firebase para la empresa.'),
+  clientes: z.array(ClienteSchema),
+  novedades: z.array(NovedadSchema),
+  asignaciones: z.array(AsignacionSchema),
+  config: ConfigComprobantesSchema,
 });
 export type GenerarFacturacionInput = z.infer<typeof GenerarFacturacionInputSchema>;
 
@@ -79,19 +99,8 @@ const generarFacturacionFlow = ai.defineFlow(
     outputSchema: GenerarFacturacionOutputSchema,
   },
   async (input) => {
-    const { mes, fechaFacturacion, firebaseConfig } = input;
+    const { mes, fechaFacturacion, clientes, novedades, asignaciones, config } = input;
     
-    // Initialize Firebase for this server-side execution
-    initializeFirebaseClient(firebaseConfig as FirebaseConfig);
-    
-    // 1. Obtener todos los datos necesarios
-    const [clientes, novedades, asignaciones, config] = await Promise.all([
-      getClientes(),
-      getNovedades(),
-      getAsignaciones(),
-      getConfiguracionComprobantes(),
-    ]);
-
     let ultimoNumeroFactura = config.ultimoFactura;
 
     const clientesMap = new Map(clientes.map(c => [c.id, c]));
@@ -118,11 +127,11 @@ const generarFacturacionFlow = ai.defineFlow(
         if (clienteEntry) {
             ultimoNumeroFactura++;
             clienteEntry.novedades.push({
-                novedadId: novedad.id,
-                novedadCodigo: novedad.codigo,
-                novedadNombre: novedad.nombre,
+                novedadId: novedad!.id,
+                novedadCodigo: novedad!.codigo,
+                novedadNombre: novedad!.nombre,
                 cantidad: asignacion.cantidad,
-                importe: asignacion.cantidad * novedad.importe,
+                importe: asignacion.cantidad * novedad!.importe,
                 numeroFactura: ultimoNumeroFactura,
             });
              if (asignacion.eventual) {
@@ -132,12 +141,6 @@ const generarFacturacionFlow = ai.defineFlow(
       }
     }
     
-    // Delete eventual assignments after processing them for billing
-    if (asignacionesEventuales.length > 0) {
-        await deleteAsignacionesEventuales(asignacionesEventuales);
-    }
-
-
     // 3. Formatear la salida
     const clientesFacturados: ClienteFacturado[] = [];
     let totalGeneral = 0;

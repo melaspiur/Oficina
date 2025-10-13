@@ -23,7 +23,10 @@ import { generarFacturacion, type GenerarFacturacionOutput } from "@/ai/flows/ge
 import { mesesList, type Movimiento, type ConfiguracionComprobantes, type ClienteFacturado } from "@/lib/types"
 import { getConfiguracionComprobantes, updateConfiguracionComprobantes } from "@/lib/services/configuracion"
 import { addMovimientosBatch } from "@/lib/services/movimientos"
-import type { FirebaseConfig } from "@/lib/empresas"
+import { deleteAsignacionesBatch } from "@/lib/services/asignaciones"
+import { getClientes } from "@/lib/services/clientes"
+import { getNovedades } from "@/lib/services/novedades"
+import { getAsignaciones } from "@/lib/services/asignaciones"
 
 const formSchema = z.object({
   mes: z.string().min(1, "Debe seleccionar un mes."),
@@ -82,22 +85,27 @@ export function FacturacionMensualView() {
       return;
     }
     
-    const firebaseConfigStr = localStorage.getItem('selectedFirebaseConfig');
-    if (!firebaseConfigStr) {
-      toast({ title: "Error de Configuración", description: "No se encontró la configuración de la empresa. Por favor, vuelva a iniciar sesión.", variant: "destructive" });
-      return;
-    }
-    const firebaseConfig: FirebaseConfig = JSON.parse(firebaseConfigStr);
-
     setIsProcessing(true)
     setFacturacionResult(null)
     
     try {
+      // Fetch all required data on the client
+      const [clientes, novedades, asignaciones, currentConfig] = await Promise.all([
+          getClientes(),
+          getNovedades(),
+          getAsignaciones(),
+          getConfiguracionComprobantes(),
+      ]);
+
       const result = await generarFacturacion({ 
         mes: mesSeleccionado.toLowerCase(),
         fechaFacturacion: data.fechaFacturacion.toISOString(),
-        firebaseConfig: firebaseConfig
+        clientes,
+        novedades,
+        asignaciones,
+        config: currentConfig,
       });
+
       setFacturacionResult(result);
        toast({
         title: "Facturación Generada",
@@ -138,10 +146,15 @@ export function FacturacionMensualView() {
     });
 
     try {
-        // 2. Save movements to the new collection
+        // 2. Save movements to the collection
         await addMovimientosBatch(movimientos);
+        
+        // 3. Delete eventual assignments if any
+        if (facturacionResult.asignacionesEventualesBorradas && facturacionResult.asignacionesEventualesBorradas.length > 0) {
+            await deleteAsignacionesBatch(facturacionResult.asignacionesEventualesBorradas);
+        }
 
-        // 3. Update the last invoice number and last billed month in config
+        // 4. Update the last invoice number and last billed month in config
         const newConfig = { 
             ...config,
             ultimoFactura: facturacionResult.ultimoNumeroFactura,
