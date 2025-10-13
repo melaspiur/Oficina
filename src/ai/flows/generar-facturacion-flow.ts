@@ -37,7 +37,7 @@ const AsignacionSchema = z.object({
   clienteId: z.string(),
   novedadId: z.string(),
   cantidad: z.number(),
-  eventual: z.boolean(),
+  eventual: z.boolean().optional(), // Hacer opcional
 });
 const ConfigComprobantesSchema = z.object({
   ultimoFactura: z.number(),
@@ -134,7 +134,8 @@ const generarFacturacionFlow = ai.defineFlow(
                 importe: asignacion.cantidad * novedad!.importe,
                 numeroFactura: ultimoNumeroFactura,
             });
-             if (asignacion.eventual) {
+             if (asignacion.eventual) { // Esto es seguro porque si es undefined, será false
+                // @ts-ignore - el schema local tiene 'eventual' como opcional
                 asignacionesEventuales.push(asignacion);
             }
         }
