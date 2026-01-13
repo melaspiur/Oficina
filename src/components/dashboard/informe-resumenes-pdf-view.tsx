@@ -5,7 +5,7 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { format } from "date-fns"
+import { format, subMonths } from "date-fns"
 import { es } from "date-fns/locale"
 import { Loader2 } from "lucide-react"
 import jsPDF from "jspdf"
@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { getClientesConMovimientos, getMovimientosPorCliente } from "@/lib/services/movimientos"
+import { getClientesConMovimientosEnPeriodo, getClientesConSaldoDeudor, getMovimientosPorCliente } from "@/lib/services/movimientos"
 import { getClientes } from "@/lib/services/clientes"
 import type { MovimientoWithId, ClienteWithId } from "@/lib/types"
 
@@ -28,12 +28,6 @@ const formSchema = z.object({
 })
 
 type FormSchema = z.infer<typeof formSchema>
-
-interface CuentaCorrienteItem extends MovimientoWithId {
-  debe: number;
-  haber: number;
-  saldo: number;
-}
 
 export function InformeResumenesPdfView() {
   const [isProcessing, setIsProcessing] = React.useState(false)
@@ -71,25 +65,27 @@ export function InformeResumenesPdfView() {
   const generatePdfForClient = (
       cliente: ClienteWithId,
       movimientos: MovimientoWithId[],
-      mes: number,
-      ano: number
+      fechaHasta: Date
   ) => {
-    const startDate = new Date(ano, mes - 1, 1);
-    const endDate = new Date(ano, mes, 0, 23, 59, 59, 999); // Last moment of the selected month
-    const mesLabel = format(startDate, 'LLLL', { locale: es });
+    const fechaDesde = subMonths(fechaHasta, 2);
+    fechaDesde.setDate(1);
+
+    const mesLabel = format(fechaHasta, 'LLLL', { locale: es });
+    const periodoLabel = `Últimos 3 meses (${format(fechaDesde, 'MMM yyyy', { locale: es })} - ${format(fechaHasta, 'MMM yyyy', { locale: es })})`;
+
 
     // 1. Calculate initial balance
-    const movimientosAnteriores = movimientos.filter(m => new Date(m.fecha) < startDate);
+    const movimientosAnteriores = movimientos.filter(m => new Date(m.fecha) < fechaDesde);
     let saldoInicial = 0;
     movimientosAnteriores.forEach(m => {
         saldoInicial += (m.comprobante === 'FC' ? m.importe : -m.importe);
     });
 
-    // 2. Filter movements for the selected month and build report data
-    const movimientosDelMes = movimientos
+    // 2. Filter movements for the selected period and build report data
+    const movimientosDelPeriodo = movimientos
       .filter(m => {
           const fechaMov = new Date(m.fecha);
-          return fechaMov >= startDate && fechaMov <= endDate;
+          return fechaMov >= fechaDesde && fechaMov <= fechaHasta;
       })
       .sort((a,b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
@@ -107,7 +103,7 @@ export function InformeResumenesPdfView() {
     ]);
 
 
-    movimientosDelMes.forEach(mov => {
+    movimientosDelPeriodo.forEach(mov => {
         const debe = mov.comprobante === 'FC' ? mov.importe : 0;
         const haber = mov.comprobante === 'RE' ? mov.importe : 0;
         saldoAcumulado += debe - haber;
@@ -124,7 +120,7 @@ export function InformeResumenesPdfView() {
     // 3. Generate PDF
     const doc = new jsPDF();
     doc.text(`Cuenta Corriente: ${cliente.codigo} - ${cliente.nombre}`, 14, 16);
-    doc.text(`Período: ${mesLabel} ${ano}`, 14, 22);
+    doc.text(`Período: ${periodoLabel}`, 14, 22);
 
     autoTable(doc, {
       startY: 30,
@@ -144,33 +140,38 @@ export function InformeResumenesPdfView() {
       }
     });
 
-    const fileName = `${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-${mesLabel}-${ano}.pdf`;
+    const fileName = `${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-Resumen-${mesLabel}-${fechaHasta.getFullYear()}.pdf`;
     doc.save(fileName);
   }
 
   const onSubmit = async (data: FormSchema) => {
     setIsProcessing(true);
-    toast({ title: "Procesando...", description: "Generando resúmenes en PDF. Esto puede tardar unos momentos." });
+    toast({ title: "Procesando...", description: "Identificando clientes y generando resúmenes. Esto puede tardar unos momentos." });
     
     try {
       const mes = parseInt(data.mes, 10);
       const ano = parseInt(data.ano, 10);
+      const fechaFinPeriodo = new Date(ano, mes, 0, 23, 59, 59, 999); // ultimo dia del mes seleccionado
       
-      const clientesConMov = await getClientesConMovimientos(ano, mes);
+      const clientesConMov = await getClientesConMovimientosEnPeriodo(ano, mes);
+      const clientesDeudores = await getClientesConSaldoDeudor(fechaFinPeriodo);
+
+      const todosLosIds = new Set([...clientesConMov, ...clientesDeudores.map(c => c.id)]);
+      
       const clientesInfoMap = new Map(allClientes.map(c => [c.id, c]));
 
-      if (clientesConMov.length === 0) {
-        toast({ title: "Sin Resultados", description: "Ningún cliente tuvo movimientos en el período seleccionado." });
+      if (todosLosIds.size === 0) {
+        toast({ title: "Sin Resultados", description: "Ningún cliente tuvo movimientos ni saldo deudor en el período." });
         setIsProcessing(false);
         return;
       }
       
       let count = 0;
-      for (const clienteId of clientesConMov) {
+      for (const clienteId of todosLosIds) {
           const cliente = clientesInfoMap.get(clienteId);
           if (cliente) {
               const todosLosMovimientos = await getMovimientosPorCliente(clienteId);
-              generatePdfForClient(cliente, todosLosMovimientos, mes, ano);
+              generatePdfForClient(cliente, todosLosMovimientos, fechaFinPeriodo);
               count++;
               // Delay to prevent browser from blocking multiple downloads
               await new Promise(resolve => setTimeout(resolve, 500));
@@ -208,7 +209,7 @@ export function InformeResumenesPdfView() {
         <CardHeader>
           <CardTitle>Generar Resúmenes Mensuales en PDF</CardTitle>
           <CardDescription>
-            Seleccione un período para generar el estado de cuenta en PDF para todos los clientes que tuvieron movimientos en dicho mes.
+            Seleccione un período para generar el estado de cuenta (últimos 3 meses) para todos los clientes con movimientos o saldo deudor.
             Los archivos se descargarán automáticamente en su navegador.
           </CardDescription>
         </CardHeader>
@@ -220,7 +221,7 @@ export function InformeResumenesPdfView() {
                     name="mes"
                     render={({ field }) => (
                     <FormItem className="w-full sm:w-auto flex-grow">
-                        <FormLabel>Mes</FormLabel>
+                        <FormLabel>Mes de Cierre</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
@@ -242,7 +243,7 @@ export function InformeResumenesPdfView() {
                     name="ano"
                     render={({ field }) => (
                     <FormItem className="w-full sm:w-auto flex-grow">
-                        <FormLabel>Año</FormLabel>
+                        <FormLabel>Año de Cierre</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>

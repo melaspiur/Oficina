@@ -1,3 +1,4 @@
+
 import { getClientDb } from "@/lib/firebase";
 import type { Movimiento, MovimientoWithId, Cliente, ClienteWithId } from "@/lib/types";
 import { collection, writeBatch, doc, getDocs, query, where, addDoc, updateDoc } from "firebase/firestore";
@@ -286,13 +287,13 @@ export async function getMovimientosRecibosPorCliente(clienteId: string): Promis
  * @param month The month (1-12).
  * @returns A promise that resolves to an array of unique client IDs.
  */
-export async function getClientesConMovimientos(year: number, month: number): Promise<string[]> {
+export async function getClientesConMovimientosEnPeriodo(year: number, month: number): Promise<string[]> {
   const db = getClientDb();
   if (!db) throw new Error("Firestore is not initialized");
   const movimientosCollection = collection(db, "movimientos");
   
   const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
   const snapshot = await getDocs(movimientosCollection);
   
@@ -302,13 +303,45 @@ export async function getClientesConMovimientos(year: number, month: number): Pr
 
   allMovements.forEach(mov => {
     const movDate = new Date(mov.fecha);
-    if (movDate >= startDate && movDate < endDate) {
+    if (movDate >= startDate && movDate <= endDate) {
       clientIds.add(mov.clienteId);
     }
   });
 
   return Array.from(clientIds);
 }
+
+/**
+ * Gets a list of clients with an outstanding balance up to a certain date.
+ * @param fechaHasta The end date for the balance calculation.
+ * @returns A promise that resolves to an array of Cliente objects with saldo.
+ */
+export async function getClientesConSaldoDeudor(fechaHasta: Date): Promise<ClienteWithId[]> {
+    const db = getClientDb();
+    if (!db) throw new Error("Firestore is not initialized");
+
+    const clientesCollection = collection(db, "clientes");
+    const clientesSnap = await getDocs(clientesCollection);
+    const allClientes = clientesSnap.docs.map(doc => ({ ...doc.data() as Cliente, id: doc.id }));
+    const clientesDeudores: ClienteWithId[] = [];
+
+    for (const cliente of allClientes) {
+        const movimientos = await getMovimientosPorCliente(cliente.id);
+        const movimientosHastaFecha = movimientos.filter(m => new Date(m.fecha) <= fechaHasta);
+        
+        let saldo = 0;
+        movimientosHastaFecha.forEach(m => {
+            saldo += (m.comprobante === 'FC' ? m.importe : -m.importe);
+        });
+
+        if (saldo > 0.01) {
+            clientesDeudores.push(cliente);
+        }
+    }
+
+    return clientesDeudores;
+}
+
 
 /**
  * Gets a list of clients who have an outstanding balance and a registered mobile phone.
@@ -337,10 +370,11 @@ export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWit
     movimientosSnap.forEach(doc => {
         const mov = doc.data() as Movimiento;
         const saldoActual = saldosPorCliente.get(mov.clienteId) || 0;
-        const importeNeto = mov.importe - mov.aplicacion;
         
         if (mov.comprobante === 'FC') {
-            saldosPorCliente.set(mov.clienteId, saldoActual + importeNeto);
+            saldosPorCliente.set(mov.clienteId, saldoActual + mov.importe);
+        } else if (mov.comprobante === 'RE') {
+             saldosPorCliente.set(mov.clienteId, saldoActual - mov.importe);
         }
     });
     
@@ -353,5 +387,3 @@ export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWit
 
     return clientesConSaldo.sort((a,b) => a.codigo - b.codigo);
 }
-
-    
