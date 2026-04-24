@@ -37,7 +37,7 @@ const AsignacionSchema = z.object({
   clienteId: z.string(),
   novedadId: z.string(),
   cantidad: z.number(),
-  eventual: z.boolean().optional(), // Hacer opcional
+  eventual: z.boolean().optional(), // Ahora es opcional para evitar errores con datos antiguos
 });
 const ConfigComprobantesSchema = z.object({
   ultimoFactura: z.number(),
@@ -105,14 +105,13 @@ const generarFacturacionFlow = ai.defineFlow(
 
     const clientesMap = new Map(clientes.map(c => [c.id, c]));
     const novedadesMap = new Map(novedades.map(n => [n.id, n]));
-    const asignacionesEventuales: AsignacionWithId[] = [];
+    const asignacionesEventuales: any[] = [];
 
     // 2. Mapear las asignaciones a cada cliente
-    const facturacionPorCliente = new Map<string, { cliente: ClienteWithId; novedades: any[] }>();
+    const facturacionPorCliente = new Map<string, { cliente: any; novedades: any[] }>();
 
     for (const asignacion of asignaciones) {
       const novedad = novedadesMap.get(asignacion.novedadId);
-      // @ts-ignore
       const mesValido = novedad && mes in novedad.meses && novedad.meses[mes];
 
       if (mesValido) {
@@ -134,8 +133,8 @@ const generarFacturacionFlow = ai.defineFlow(
                 importe: asignacion.cantidad * novedad!.importe,
                 numeroFactura: ultimoNumeroFactura,
             });
-             if (asignacion.eventual) { // Esto es seguro porque si es undefined, será false
-                // @ts-ignore - el schema local tiene 'eventual' como opcional
+            
+             if (asignacion.eventual) { 
                 asignacionesEventuales.push(asignacion);
             }
         }

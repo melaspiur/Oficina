@@ -67,21 +67,22 @@ export function InformeResumenesPdfView() {
       movimientos: MovimientoWithId[],
       fechaHasta: Date
   ) => {
+    // Definimos el periodo de los últimos 3 meses
     const fechaDesde = subMonths(fechaHasta, 2);
     fechaDesde.setDate(1);
+    fechaDesde.setHours(0,0,0,0);
 
     const mesLabel = format(fechaHasta, 'LLLL', { locale: es });
     const periodoLabel = `Últimos 3 meses (${format(fechaDesde, 'MMM yyyy', { locale: es })} - ${format(fechaHasta, 'MMM yyyy', { locale: es })})`;
 
-
-    // 1. Calculate initial balance
+    // 1. Calcular saldo inicial (todos los movimientos anteriores a la ventana de 3 meses)
     const movimientosAnteriores = movimientos.filter(m => new Date(m.fecha) < fechaDesde);
     let saldoInicial = 0;
     movimientosAnteriores.forEach(m => {
         saldoInicial += (m.comprobante === 'FC' ? m.importe : -m.importe);
     });
 
-    // 2. Filter movements for the selected period and build report data
+    // 2. Filtrar movimientos dentro de los últimos 3 meses
     const movimientosDelPeriodo = movimientos
       .filter(m => {
           const fechaMov = new Date(m.fecha);
@@ -92,7 +93,7 @@ export function InformeResumenesPdfView() {
     let saldoAcumulado = saldoInicial;
     const reportData: any[] = [];
     
-    // Add initial balance row
+    // Fila de Saldo Anterior
     reportData.push([
       '', 
       '', 
@@ -101,7 +102,6 @@ export function InformeResumenesPdfView() {
       '', 
       { content: formatCurrency(saldoInicial), styles: { halign: 'right' } }
     ]);
-
 
     movimientosDelPeriodo.forEach(mov => {
         const debe = mov.comprobante === 'FC' ? mov.importe : 0;
@@ -117,9 +117,9 @@ export function InformeResumenesPdfView() {
         ]);
     });
     
-    // 3. Generate PDF
+    // 3. Generar PDF
     const doc = new jsPDF();
-    doc.text(`Cuenta Corriente: ${cliente.codigo} - ${cliente.nombre}`, 14, 16);
+    doc.text(`Resumen de Cuenta: ${cliente.codigo} - ${cliente.nombre}`, 14, 16);
     doc.text(`Período: ${periodoLabel}`, 14, 22);
 
     autoTable(doc, {
@@ -140,24 +140,26 @@ export function InformeResumenesPdfView() {
       }
     });
 
-    const fileName = `${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-Resumen-${mesLabel}-${fechaHasta.getFullYear()}.pdf`;
+    const fileName = `${cliente.codigo}-${cliente.nombre.replace(/\s+/g, '_')}-Resumen-3meses-${mesLabel}.pdf`;
     doc.save(fileName);
   }
 
   const onSubmit = async (data: FormSchema) => {
     setIsProcessing(true);
-    toast({ title: "Procesando...", description: "Identificando clientes y generando resúmenes. Esto puede tardar unos momentos." });
+    toast({ title: "Procesando...", description: "Generando resúmenes de 3 meses para clientes activos y deudores." });
     
     try {
       const mes = parseInt(data.mes, 10);
       const ano = parseInt(data.ano, 10);
-      const fechaFinPeriodo = new Date(ano, mes, 0, 23, 59, 59, 999); // ultimo dia del mes seleccionado
+      const fechaFinPeriodo = new Date(ano, mes, 0, 23, 59, 59, 999); 
       
-      const clientesConMov = await getClientesConMovimientosEnPeriodo(ano, mes);
-      const clientesDeudores = await getClientesConSaldoDeudor(fechaFinPeriodo);
+      // Obtenemos clientes con movimientos en el mes Y clientes que deben plata
+      const [clientesConMov, clientesDeudores] = await Promise.all([
+          getClientesConMovimientosEnPeriodo(ano, mes),
+          getClientesConSaldoDeudor(fechaFinPeriodo)
+      ]);
 
       const todosLosIds = new Set([...clientesConMov, ...clientesDeudores.map(c => c.id)]);
-      
       const clientesInfoMap = new Map(allClientes.map(c => [c.id, c]));
 
       if (todosLosIds.size === 0) {
@@ -173,14 +175,13 @@ export function InformeResumenesPdfView() {
               const todosLosMovimientos = await getMovimientosPorCliente(clienteId);
               generatePdfForClient(cliente, todosLosMovimientos, fechaFinPeriodo);
               count++;
-              // Delay to prevent browser from blocking multiple downloads
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 600)); // Delay para evitar bloqueo de descargas múltiples
           }
       }
 
       toast({
         title: "Proceso Completado",
-        description: `Se han generado ${count} resúmenes en PDF.`,
+        description: `Se han generado ${count} resúmenes detallados de 3 meses.`,
       });
 
     } catch (error) {
@@ -195,7 +196,6 @@ export function InformeResumenesPdfView() {
     }
   }
 
-
   const mesesOptions = Array.from({ length: 12 }, (_, i) => ({
       value: String(i + 1),
       label: format(new Date(0, i), 'LLLL', { locale: es }),
@@ -207,10 +207,9 @@ export function InformeResumenesPdfView() {
     <div className="p-6 space-y-6">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle>Generar Resúmenes Mensuales en PDF</CardTitle>
+          <CardTitle>Generar Resúmenes Mensuales en PDF (3 Meses)</CardTitle>
           <CardDescription>
-            Seleccione un período para generar el estado de cuenta (últimos 3 meses) para todos los clientes con movimientos o saldo deudor.
-            Los archivos se descargarán automáticamente en su navegador.
+            Genera un resumen detallado de los últimos 3 meses para todos los clientes que tuvieron movimientos este mes o que poseen una deuda pendiente.
           </CardDescription>
         </CardHeader>
         <CardContent>

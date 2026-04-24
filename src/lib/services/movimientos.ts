@@ -167,29 +167,6 @@ export async function getMovimientosPorCliente(clienteId: string): Promise<Movim
 
 
 /**
- * Fetches all movements with a specific description.
- * @param descripcion The description to search for.
- * @returns A promise that resolves to an array of movements matching the description.
- */
-export async function getMovimientosPorDescripcion(descripcion: string): Promise<MovimientoWithId[]> {
-    const db = getClientDb();
-    if (!db) throw new Error("Firestore is not initialized");
-    const movimientosCollection = collection(db, "movimientos");
-
-    if (!descripcion) return [];
-
-    const q = query(
-        movimientosCollection,
-        where("descripcion", "==", descripcion)
-    );
-    
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map(doc => ({ ...(doc.data() as Movimiento), id: doc.id }));
-}
-
-
-/**
  * Fetches all movements for a specific client within the last year.
  * @param clienteId The ID of the client.
  * @returns A promise that resolves to an array of all movements for the client from the last year.
@@ -235,57 +212,7 @@ export async function getMovimientosPendientesPorCliente(clienteId: string): Pro
 
 
 /**
- * Fetches all 'FC' (Factura) movements for a specific client.
- * @param clienteId The ID of the client.
- * @returns A promise that resolves to an array of MovimientoWithId.
- */
-export async function getMovimientosFacturasPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
-  const db = getClientDb();
-  if (!db) throw new Error("Firestore is not initialized");
-  const movimientosCollection = collection(db, "movimientos");
-  
-  if (!clienteId) return [];
-
-  const q = query(
-    movimientosCollection,
-    where("comprobante", "==", "FC"),
-    where("clienteId", "==", clienteId)
-  );
-  
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
-}
-
-/**
- * Fetches all 'RE' (Recibo) movements for a specific client.
- * @param clienteId The ID of the client.
- * @returns A promise that resolves to an array of MovimientoWithId.
- */
-export async function getMovimientosRecibosPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
-  const db = getClientDb();
-  if (!db) throw new Error("Firestore is not initialized");
-  const movimientosCollection = collection(db, "movimientos");
-
-  if (!clienteId) return [];
-
-  const q = query(
-    movimientosCollection,
-    where("comprobante", "==", "RE"),
-    where("clienteId", "==", clienteId)
-  );
-  
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs.map(doc => ({ ...doc.data() as Movimiento, id: doc.id }));
-}
-
-
-/**
  * Gets a list of unique client IDs who had movements in a given month and year.
- * @param year The full year (e.g., 2024).
- * @param month The month (1-12).
- * @returns A promise that resolves to an array of unique client IDs.
  */
 export async function getClientesConMovimientosEnPeriodo(year: number, month: number): Promise<string[]> {
   const db = getClientDb();
@@ -312,9 +239,7 @@ export async function getClientesConMovimientosEnPeriodo(year: number, month: nu
 }
 
 /**
- * Gets a list of clients with an outstanding balance up to a certain date.
- * @param fechaHasta The end date for the balance calculation.
- * @returns A promise that resolves to an array of Cliente objects with saldo.
+ * Gets a list of unique client IDs with an outstanding balance up to a certain date.
  */
 export async function getClientesConSaldoDeudor(fechaHasta: Date): Promise<ClienteWithId[]> {
     const db = getClientDb();
@@ -340,50 +265,4 @@ export async function getClientesConSaldoDeudor(fechaHasta: Date): Promise<Clien
     }
 
     return clientesDeudores;
-}
-
-
-/**
- * Gets a list of clients who have an outstanding balance and a registered mobile phone.
- * @returns A promise that resolves to an array of ClienteWithId.
- */
-export async function getClientesConSaldoPendienteYCelular(): Promise<ClienteWithId[]> {
-    const db = getClientDb();
-    if (!db) throw new Error("Firestore is not initialized");
-    
-    const movimientosCollection = collection(db, "movimientos");
-    const clientesCollection = collection(db, "clientes");
-
-    const movimientosSnap = await getDocs(movimientosCollection);
-    const clientesSnap = await getDocs(clientesCollection);
-
-    const clientesMap = new Map<string, ClienteWithId>();
-    clientesSnap.forEach(doc => {
-        const clienteData = doc.data() as Cliente;
-        if (clienteData.celular && clienteData.celular.trim() !== '') {
-            clientesMap.set(doc.id, { ...clienteData, id: doc.id });
-        }
-    });
-
-    const saldosPorCliente = new Map<string, number>();
-
-    movimientosSnap.forEach(doc => {
-        const mov = doc.data() as Movimiento;
-        const saldoActual = saldosPorCliente.get(mov.clienteId) || 0;
-        
-        if (mov.comprobante === 'FC') {
-            saldosPorCliente.set(mov.clienteId, saldoActual + mov.importe);
-        } else if (mov.comprobante === 'RE') {
-             saldosPorCliente.set(mov.clienteId, saldoActual - mov.importe);
-        }
-    });
-    
-    const clientesConSaldo = [];
-    for (const [clienteId, saldo] of saldosPorCliente.entries()) {
-        if (saldo > 0.01 && clientesMap.has(clienteId)) {
-            clientesConSaldo.push(clientesMap.get(clienteId)!);
-        }
-    }
-
-    return clientesConSaldo.sort((a,b) => a.codigo - b.codigo);
 }
