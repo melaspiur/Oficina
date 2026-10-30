@@ -141,6 +141,9 @@ export default function CompanySelectorPage() {
            <p className="text-center text-sm text-muted-foreground pt-2">
             Oficina Ejemplo: 20222222223
           </p>
+           <p className="text-center text-sm pt-1">
+            <a href="/" className="text-primary hover:underline">&larr; Elegir otro programa</a>
+          </p>
         </CardContent>
       </Card>
       

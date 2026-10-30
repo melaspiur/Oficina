@@ -96,17 +96,54 @@ En `next.config.ts` se agrego:
 - `trailingSlash: true` - rutas con barra final, necesario en hosting comun
 - `images.unoptimized: true` - sin optimizador de imagenes, que requiere servidor
 
+### 6. Oficina pasa a laspiur.com/oficina y la raiz elige programa
+
+**Archivos:** `next.config.ts` y `src/app/page.tsx`. El menu de la raiz vive en
+el repositorio aparte `melaspiur/web-laspiur` (`C:\Proyectos\web-laspiur`).
+
+**Problema.** En laspiur.com conviven dos programas: Oficina y Agro. Al subir
+el contenido de `out` a la raiz del hosting, el `index.html` de Oficina piso
+al index que permitia elegir programa, y Agro quedo sin acceso.
+
+**Solucion.**
+
+- `basePath: '/oficina'` en `next.config.ts`: Oficina se compila para vivir en
+  la subcarpeta `/oficina` del hosting. Todas las rutas internas usan
+  `router.push`/`router.replace`, que respetan el basePath solas.
+- `web-laspiur/index.html` (otro repositorio): pagina HTML suelta (sin Next) que va en la raiz del
+  hosting y muestra dos opciones: **Oficina** (`/oficina/`, pide CUIT) y
+  **Agro** (va directo al login de usuario de Agro, publicado en Firebase).
+  La direccion de Agro (`https://studio--adminlite-9j4ln.us-central1.hosted.app/`,
+  App Hosting del proyecto AgroMel) esta en la lista `PROGRAMAS` del script.
+  Se paso a un repositorio propio porque se van a ir sumando programas.
+- En la pantalla de CUIT se agrego el link "Elegir otro programa", que vuelve
+  a la raiz.
+
+Agro no se puede publicar por FTP como Oficina: la lectura de facturas en PDF
+(`extract-invoice-flow`) usa IA con server action y necesita servidor. Por eso
+sigue en Firebase y el index solo lo enlaza.
+
 ---
 
 ## Como publicar
 
+Estructura en el hosting:
+
+    public_html/            (raiz publica de laspiur.com)
+      index.html            <- menu, del repo web-laspiur
+      oficina/              <- contenido de out
+        index.html, _next/, dashboard/, login/, 404.html
+
 1. `npm run build` - genera la carpeta `out` (unos 3 MB)
-2. Subir por FTP **el contenido** de `out`, no la carpeta `out`, a la raiz
-   publica del servidor. Tienen que quedar `index.html`, `_next/`,
-   `dashboard/`, `login/` y `404.html`.
-3. Verificar que `_next/static` haya subido completo. Si queda a medias el
-   sitio carga en blanco.
-4. En la consola de Firebase, Authentication > Settings > Dominios
+2. Subir por FTP **el contenido** de `out` a la carpeta `oficina` del
+   servidor (crearla si no existe). No a la raiz.
+3. Subir `index.html` del repo web-laspiur a la raiz publica (reemplaza al index de
+   Oficina que quedo ahi). En la raiz se pueden borrar `_next/`, `dashboard/`,
+   `login/`, `404.html` e `index.txt` que hayan quedado de la publicacion
+   anterior.
+4. Verificar que `oficina/_next/static` haya subido completo. Si queda a
+   medias el sitio carga en blanco.
+5. En la consola de Firebase, Authentication > Settings > Dominios
    autorizados, agregar el dominio del hosting. Sin eso el sitio carga pero el
    login falla.
 
