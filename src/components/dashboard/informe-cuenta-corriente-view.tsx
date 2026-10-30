@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Combobox } from "@/components/ui/combobox"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
-import { getMovimientosPorClienteLastYear } from "@/lib/services/movimientos"
+import { getMovimientosPorCliente } from "@/lib/services/movimientos"
 import { getClientes } from "@/lib/services/clientes"
 import type { MovimientoWithId, ClienteWithId } from "@/lib/types"
 
@@ -30,6 +30,7 @@ export function InformeCuentaCorrienteView() {
   const [allClientes, setAllClientes] = React.useState<ClienteWithId[]>([])
   const [selectedCliente, setSelectedCliente] = React.useState<ClienteWithId | null>(null);
   const [selectedClienteId, setSelectedClienteId] = React.useState<string | null>(null);
+  const [saldoAnterior, setSaldoAnterior] = React.useState(0);
   
   const { toast } = useToast()
 
@@ -57,6 +58,7 @@ export function InformeCuentaCorrienteView() {
     
     if (!clienteId) {
         setReportData([]);
+        setSaldoAnterior(0);
         setSelectedCliente(null);
         return;
     }
@@ -66,13 +68,28 @@ export function InformeCuentaCorrienteView() {
 
     setIsProcessing(true);
     setReportData([]);
+    setSaldoAnterior(0);
 
     try {
-        const movimientos = await getMovimientosPorClienteLastYear(clienteId);
-        
+        // Se traen TODOS los movimientos del cliente para poder calcular el saldo anterior.
+        const todosLosMovimientos = await getMovimientosPorCliente(clienteId);
+
+        // Fecha de corte del periodo que se muestra (ultimo anio).
+        const fechaDesde = new Date();
+        fechaDesde.setFullYear(fechaDesde.getFullYear() - 1);
+
+        // Saldo anterior: arrastre de todo lo ocurrido ANTES del periodo.
+        const saldoInicial = todosLosMovimientos
+            .filter(mov => new Date(mov.fecha) < fechaDesde)
+            .reduce((acc, mov) => acc + (mov.comprobante === 'FC' ? mov.importe : -mov.importe), 0);
+
+        setSaldoAnterior(saldoInicial);
+
+        const movimientos = todosLosMovimientos.filter(mov => new Date(mov.fecha) >= fechaDesde);
+
         const sortedMovimientos = movimientos.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
-        let saldoAcumulado = 0;
+        let saldoAcumulado = saldoInicial;
         const processedData: CuentaCorrienteItem[] = sortedMovimientos.map(mov => {
             const debe = mov.comprobante === 'FC' ? mov.importe : 0;
             const haber = mov.comprobante === 'RE' ? mov.importe : 0;
@@ -114,13 +131,23 @@ export function InformeCuentaCorrienteView() {
       }).format(value);
   };
 
-  const finalBalance = reportData.length > 0 ? reportData[reportData.length - 1].saldo : 0;
+  const finalBalance = reportData.length > 0 ? reportData[reportData.length - 1].saldo : saldoAnterior;
+  const hayDatos = reportData.length > 0 || saldoAnterior !== 0;
   
   const handleExportExcel = () => {
     if (!selectedCliente) return;
     const fileName = `CuentaCorriente_${selectedCliente.nombre.replace(/\s+/g, '_')}.xlsx`;
 
-    const dataForSheet = reportData.map(item => ({
+    const dataForSheet: any[] = [{
+        Fecha: '',
+        Comprobante: '',
+        Descripcion: 'SALDO ANTERIOR',
+        Debe: undefined,
+        Haber: undefined,
+        Saldo: saldoAnterior,
+    }];
+
+    reportData.forEach(item => dataForSheet.push({
         Fecha: format(new Date(item.fecha), 'dd/MM/yyyy'),
         Comprobante: `${item.comprobante}-${String(item.numero).padStart(8, '0')}`,
         Descripcion: item.descripcion,
@@ -177,14 +204,18 @@ export function InformeCuentaCorrienteView() {
     autoTable(doc, {
       startY: 30,
       head: [['Fecha', 'Comprobante', 'Descripción', 'Debe', 'Haber', 'Saldo']],
-      body: reportData.map(item => [
+      body: [
+        ['', '', { content: 'SALDO ANTERIOR', styles: { fontStyle: 'bold' } }, '', '',
+         { content: formatCurrency(saldoAnterior), styles: { halign: 'right', fontStyle: 'bold' } }],
+        ...reportData.map(item => [
           format(new Date(item.fecha), 'dd/MM/yyyy'),
           `${item.comprobante}-${String(item.numero).padStart(8, '0')}`,
           item.descripcion || '',
           { content: item.debe > 0 ? formatCurrency(item.debe) : '', styles: { halign: 'right' } },
           { content: item.haber > 0 ? formatCurrency(item.haber) : '', styles: { halign: 'right' } },
           { content: formatCurrency(item.saldo), styles: { halign: 'right' } }
-      ]),
+        ])
+      ],
       foot: [
           [{ content: 'Saldo Final', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
            { content: formatCurrency(finalBalance), styles: { halign: 'right', fontStyle: 'bold' } }]
@@ -228,7 +259,7 @@ export function InformeCuentaCorrienteView() {
         </CardContent>
       </Card>
       
-      { (isProcessing || reportData.length > 0 || (selectedClienteId && !isProcessing)) && (
+      { (isProcessing || hayDatos || (selectedClienteId && !isProcessing)) && (
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center">
@@ -240,7 +271,7 @@ export function InformeCuentaCorrienteView() {
                             </CardDescription>
                         )}
                     </div>
-                     {reportData.length > 0 && !isProcessing && (
+                     {hayDatos && !isProcessing && (
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={handleExportExcel}>
                                 <FileDown className="mr-2 h-4 w-4" />
@@ -274,8 +305,17 @@ export function InformeCuentaCorrienteView() {
                                         <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                                     </TableCell>
                                 </TableRow>
-                            ) : reportData.length > 0 ? (
-                                reportData.map((item) => (
+                            ) : hayDatos ? (
+                              <>
+                                <TableRow key="saldo-anterior" className="bg-muted/50">
+                                    <TableCell></TableCell>
+                                    <TableCell></TableCell>
+                                    <TableCell className="font-bold">SALDO ANTERIOR</TableCell>
+                                    <TableCell></TableCell>
+                                    <TableCell></TableCell>
+                                    <TableCell className="text-right font-bold">{formatCurrency(saldoAnterior)}</TableCell>
+                                </TableRow>
+                                {reportData.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell>{format(new Date(item.fecha), 'dd/MM/yyyy')}</TableCell>
                                         <TableCell className="font-mono">{`${item.comprobante}-${String(item.numero).padStart(8, '0')}`}</TableCell>
@@ -284,7 +324,8 @@ export function InformeCuentaCorrienteView() {
                                         <TableCell className="text-right font-medium text-green-600">{item.haber > 0 ? formatCurrency(item.haber) : ""}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatCurrency(item.saldo)}</TableCell>
                                     </TableRow>
-                                ))
+                                ))}
+                              </>
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center h-24">
@@ -293,7 +334,7 @@ export function InformeCuentaCorrienteView() {
                                 </TableRow>
                             )}
                         </TableBody>
-                        {reportData.length > 0 && !isProcessing && (
+                        {hayDatos && !isProcessing && (
                             <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-right font-bold text-lg">Saldo Final</TableCell>

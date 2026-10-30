@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, PlusCircle, Loader2, Edit, Pin } from "lucide-react"
+import { Trash2, PlusCircle, Loader2, Edit, Pin, FileDown } from "lucide-react"
+import * as XLSX from "xlsx"
 import type { ClienteWithId, NovedadWithId, AsignacionViewModel, AsignacionWithId, Asignacion } from "@/lib/types"
 import { getClientes } from "@/lib/services/clientes"
 import { getNovedades } from "@/lib/services/novedades"
@@ -196,6 +197,57 @@ export function AsignacionIndividualView() {
       }).format(value);
   };
 
+  const handleExportExcel = () => {
+    if (!selectedNovedad || asignacionesNovedad.length === 0) return;
+
+    const nombreLimpio = selectedNovedad.nombre.replace(/[^a-zA-Z0-9]+/g, '_');
+    const fileName = `Asignaciones_${selectedNovedad.codigo}_${nombreLimpio}.xlsx`;
+
+    const dataForSheet: any[] = asignacionesNovedad
+      .slice()
+      .sort((a, b) => a.clienteCodigo - b.clienteCodigo)
+      .map(a => ({
+        Codigo: a.clienteCodigo,
+        Cliente: a.clienteNombre,
+        Cantidad: a.cantidad,
+        Importe: a.importe,
+        Tipo: a.eventual ? 'Eventual' : 'Fijo',
+      }));
+
+    const totalCantidad = asignacionesNovedad.reduce((acc, a) => acc + a.cantidad, 0);
+    const totalImporte = asignacionesNovedad.reduce((acc, a) => acc + a.importe, 0);
+
+    dataForSheet.push({
+      Codigo: '',
+      Cliente: 'TOTAL',
+      Cantidad: totalCantidad,
+      Importe: totalImporte,
+      Tipo: '',
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet, {
+      header: ['Codigo', 'Cliente', 'Cantidad', 'Importe', 'Tipo'],
+    });
+
+    worksheet['!cols'] = [
+      { wch: 10 },  // Codigo
+      { wch: 45 },  // Cliente
+      { wch: 12 },  // Cantidad
+      { wch: 16 },  // Importe
+      { wch: 12 },  // Tipo
+    ];
+
+    dataForSheet.forEach((_row, index) => {
+      const i = index + 2; // fila 1 = encabezados
+      if (worksheet[`C${i}`]) worksheet[`C${i}`].z = '#,##0.00';
+      if (worksheet[`D${i}`]) worksheet[`D${i}`].z = '$ #,##0.00';
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Asignaciones");
+    XLSX.writeFile(workbook, fileName);
+  };
+
   return (
     <div className="space-y-6 pt-6">
       <Card>
@@ -270,8 +322,21 @@ export function AsignacionIndividualView() {
 
             <Card>
                 <CardHeader>
-                <CardTitle>Clientes Asignados a {selectedNovedad.nombre}</CardTitle>
-                <CardDescription>Lista de todos los clientes asignados.</CardDescription>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <CardTitle>Clientes Asignados a {selectedNovedad.nombre}</CardTitle>
+                        <CardDescription>
+                            Lista de todos los clientes asignados.
+                            {asignacionesNovedad.length > 0 && ` (${asignacionesNovedad.length} clientes)`}
+                        </CardDescription>
+                    </div>
+                    {asignacionesNovedad.length > 0 && !isLoadingAsignaciones && (
+                        <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Exportar a Excel
+                        </Button>
+                    )}
+                </div>
                 </CardHeader>
                 <CardContent>
                 <div className="border rounded-lg">

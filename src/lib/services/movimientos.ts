@@ -167,6 +167,34 @@ export async function getMovimientosPorCliente(clienteId: string): Promise<Movim
 
 
 /**
+ * Fetches all invoice (FC) movements for a specific client.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an array of the client's invoices.
+ */
+export async function getMovimientosFacturasPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+    if (!clienteId) return [];
+
+    const todosLosMovimientos = await getMovimientosPorCliente(clienteId);
+
+    return todosLosMovimientos.filter(mov => mov.comprobante === 'FC');
+}
+
+
+/**
+ * Fetches all receipt (RE) movements for a specific client.
+ * @param clienteId The ID of the client.
+ * @returns A promise that resolves to an array of the client's receipts.
+ */
+export async function getMovimientosRecibosPorCliente(clienteId: string): Promise<MovimientoWithId[]> {
+    if (!clienteId) return [];
+
+    const todosLosMovimientos = await getMovimientosPorCliente(clienteId);
+
+    return todosLosMovimientos.filter(mov => mov.comprobante === 'RE');
+}
+
+
+/**
  * Fetches all movements for a specific client within the last year.
  * @param clienteId The ID of the client.
  * @returns A promise that resolves to an array of all movements for the client from the last year.

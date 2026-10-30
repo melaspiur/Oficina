@@ -1,5 +1,4 @@
 
-'use server';
 /**
  * @fileOverview Flujo para generar la facturación mensual de todos los clientes.
  *
@@ -8,7 +7,6 @@
  * - GenerarFacturacionOutput - El output del flujo.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import type { ClienteWithId } from '@/lib/services/clientes';
 import type { NovedadWithId } from '@/lib/services/novedades';
@@ -92,13 +90,9 @@ export async function generarFacturacion(input: GenerarFacturacionInput): Promis
 }
 
 
-const generarFacturacionFlow = ai.defineFlow(
+// Calculo puro de la facturacion mensual. No usa IA: corre en el navegador.
+async function generarFacturacionFlow(input: GenerarFacturacionInput): Promise<GenerarFacturacionOutput> {
   {
-    name: 'generarFacturacionFlow',
-    inputSchema: GenerarFacturacionInputSchema,
-    outputSchema: GenerarFacturacionOutputSchema,
-  },
-  async (input) => {
     const { mes, fechaFacturacion, clientes, novedades, asignaciones, config } = input;
     
     let ultimoNumeroFactura = config.ultimoFactura;
@@ -167,4 +161,4 @@ const generarFacturacionFlow = ai.defineFlow(
       asignacionesEventualesBorradas: asignacionesEventuales.map(a => a.id),
     };
   }
-);
+}
